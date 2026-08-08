@@ -19,13 +19,13 @@ class IdentityService {
 
     // 3. Güvenlik: Şifreyi Hash'le (Kriptola)
     const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    const password = await bcrypt.hash(password, saltRounds);
 
     // 4. Kayıt: Kullanıcıyı oluştur
     const user = await identityRepository.createUser({
       username,
       email,
-      passwordHash,
+      password,
       favoriteClubId,
     });
 
@@ -33,7 +33,7 @@ class IdentityService {
     const token = this._generateToken(user);
 
     // Güvenlik: Şifre hash'ini asla dışarıya (frontend'e) gönderme
-    delete user.passwordHash;
+    delete user.password;
 
     return { user, token };
   }
@@ -56,7 +56,7 @@ class IdentityService {
     }
 
     // 2. Şifreler eşleşiyor mu kontrol et (Bcrypt ile)
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new Error('INVALID_CREDENTIALS');
     }
@@ -65,7 +65,7 @@ class IdentityService {
     const token = this._generateToken(user);
 
     // Güvenlik: Şifre hash'ini asla dışarıya gönderme
-    delete user.passwordHash;
+    delete user.password;
 
     return { user, token };
   }
