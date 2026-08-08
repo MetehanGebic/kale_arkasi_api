@@ -38,15 +38,13 @@ class IdentityService {
     return { user, token };
   }
 
-  _generateToken(user) {
-    // Token içine kullanıcının takım ID'sini de koyuyoruz ki 
-    // Socket.IO chat odalarına bağlarken veritabanını yormayalım.
-    return jwt.sign(
-      { id: user.id, username: user.username, clubId: user.favoriteClubId },
-      process.env.JWT_SECRET || 'cok_gizli_kahvehane_anahtari_degistirilecek',
-      { expiresIn: '30d' }
-    );
-  }
+_generateToken(user) {
+  return jwt.sign(
+    { id: user.id, username: user.username, clubId: user.favoriteClubId },
+    process.env.JWT_SECRET,
+    { expiresIn: '30d' }
+  );
+}
 
   async loginUser({ email, password }) {
     // 1. Kullanıcıyı e-posta ile bul
