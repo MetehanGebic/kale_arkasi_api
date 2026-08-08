@@ -36,7 +36,7 @@ class IdentityController {
         return res.status(400).json({
           success: false,
           message: "Geçersiz veri formatı.",
-          errors: error.errors.map(e => e.message),
+          errors: error.issues.map(e => e.message),
         });
       }
 
@@ -73,7 +73,7 @@ class IdentityController {
         return res.status(400).json({
           success: false,
           message: "Geçersiz veri formatı.",
-          errors: error.errors.map(e => e.message),
+          errors: error.issues.map(e => e.message),
         });
       }
 
