@@ -1,13 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-
-// Rotaları içeri aktarıyoruz
+import economyRoutes from './routes/economyRoutes.js';
 import identityRoutes from './modules/identity/identity.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const economyRoutes = require('./routes/economyRoutes');
 
 app.use(cors());
 app.use(express.json());

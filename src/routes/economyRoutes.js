@@ -1,9 +1,10 @@
-const express = require('express');
+import express from 'express';
+import * as economyController from '../controllers/economyController.js';
+// import { verifyToken } from '../bir/yerlerdeki/authMiddleware.js';
+
 const router = express.Router();
-const economyController = require('../controllers/economyController');
-const { verifyToken } = require('../middlewares/authMiddleware'); // Senin auth middleware'in
 
-// Bu rotaya sadece giriş yapmış (token'ı olan) kullanıcılar erişebilir
-router.post('/daily-tea', verifyToken, economyController.claimDailyTea);
+// Eğer token doğrulaman hazırsa araya verifyToken'ı ekleyebilirsin
+router.post('/daily-tea', economyController.claimDailyTea);
 
-module.exports = router;
+export default router;

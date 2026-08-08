@@ -1,24 +1,14 @@
-const economyService = require('../services/economyService');
+import * as economyService from '../services/economyService.js';
 
-const claimDailyTea = async (req, res) => {
+export const claimDailyTea = async (req, res) => {
   try {
-    // JWT middleware'inden gelen kullanıcı ID'si (req.user.id olarak varsayıyoruz)
+    // JWT'den gelen kullanıcı ID'sini alıyoruz
     const userId = req.user.id; 
     
     const result = await economyService.claimDailyTea(userId);
     
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(400).json({ success: false, message: error.message });
   }
-};
-
-module.exports = {
-  claimDailyTea,
 };
