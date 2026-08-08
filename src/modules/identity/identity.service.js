@@ -19,13 +19,13 @@ class IdentityService {
 
     // 3. Güvenlik: Şifreyi Hash'le (Kriptola)
     const saltRounds = 12;
-    const password = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, saltRounds); // 'password' yerine 'hashedPassword' yaptık
 
     // 4. Kayıt: Kullanıcıyı oluştur
     const user = await identityRepository.createUser({
       username,
       email,
-      password,
+      password: hashedPassword, // Güncellenmiş şifreyi repository'ye gönderiyoruz
       favoriteClubId,
     });
 
