@@ -4,15 +4,13 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pkg from '@prisma/client';
 import 'dotenv/config';
 
-const { PrismaClient } = pkg;
+const { PrismaClient } = require('@prisma/client');
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
 
-// Neon.tech veritabanı bağlantı havuzu
-const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL 
-});
-
-// Prisma'ya PostgreSQL adaptörünü takıyoruz
+// Yeni nesil bağlantı havuzu oluşturuluyor
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 
-// Mimarinin geri kalanında kullanılacak tek ve resmi veritabanı istemcimiz
-export const prisma = new PrismaClient({ adapter });
+// Prisma artık bu adaptör üzerinden çalışacak
+const prisma = new PrismaClient({ adapter });

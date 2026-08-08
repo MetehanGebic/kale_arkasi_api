@@ -7,6 +7,7 @@ import identityRoutes from './modules/identity/identity.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const economyRoutes = require('./routes/economyRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -18,6 +19,7 @@ app.get('/health', (req, res) => {
 
 // Modül Rotalarını Bağlıyoruz (Tüm identity istekleri /api/identity altından geçecek)
 app.use('/api/identity', identityRoutes);
+app.use('/api/economy', economyRoutes);
 
 app.listen(PORT, () => {
   console.log(`Kahvehane kapılarını açtı: http://localhost:${PORT}`);

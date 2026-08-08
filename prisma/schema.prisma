@@ -6,70 +6,70 @@ datasource db {
   provider = "postgresql"
 }
 
-// -----------------------------------------------------------------------------
-// ENUMS
-// -----------------------------------------------------------------------------
-
-enum AccountStatus {
-  ACTIVE
-  SUSPENDED
-  BANNED
-}
-
-// -----------------------------------------------------------------------------
-// MODELS
-// -----------------------------------------------------------------------------
-
 model Club {
-  id             String  @id @default(uuid())
-  name           String  @db.VarChar(100)       
-  slug           String  @unique @db.VarChar(100) 
-  primaryColor   String  @db.VarChar(7)         
-  secondaryColor String  @db.VarChar(7)         
-  logoUrl        String? @db.VarChar(255)       
-  isActive       Boolean @default(true)         
-
-  users          User[]  
-  homeMatches    Match[] @relation("HomeClub")
-  awayMatches    Match[] @relation("AwayClub")
-
+  id             String   @id @default(uuid())
+  name           String   @unique
+  slug           String   @unique
+  primaryColor   String
+  secondaryColor String
+  logoUrl        String?
+  isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@index([slug]) 
-  @@map("clubs")  
+  users          User[]
+
+  // Prisma'ya veritabanındaki "clubs" tablosunu kullanmasını söyler
+  @@map("clubs") 
 }
 
 model User {
-  id             String        @id @default(uuid())
-  username       String        @unique @db.VarChar(30)
-  email          String        @unique @db.VarChar(255)
-  passwordHash   String?       @db.VarChar(255) 
+  id                  String     @id @default(uuid())
+  username            String     @unique
+  email               String     @unique
+  password            String     @default("")
+  teaBalance          Int        @default(0) // Çay Bakiyesi
+  lastDailyTeaClaimAt DateTime?  // Günlük bedava çayı son alma zamanı
+  status              String     @default("ACTIVE")
   
-  teaBalance     Int           @default(0)
+  favoriteClubId      String
+  favoriteClub        Club       @relation(fields: [favoriteClubId], references: [id])
   
-  status         AccountStatus @default(ACTIVE)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
-  favoriteClubId String
-  favoriteClub   Club          @relation(fields: [favoriteClubId], references: [id], onDelete: Restrict)
+  completedTasks      UserTask[]
 
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@index([favoriteClubId])
-  @@map("users")
+  // Prisma'ya veritabanındaki "users" tablosunu kullanmasını söyler
+  @@map("users") 
 }
 
-model Match {
-  id             String   @id @default(uuid())
-  homeClubId     String
-  homeClub       Club     @relation("HomeClub", fields: [homeClubId], references: [id], onDelete: Restrict)
-  awayClubId     String
-  awayClub       Club     @relation("AwayClub", fields: [awayClubId], references: [id], onDelete: Restrict)
+model Task {
+  id          String     @id @default(uuid())
+  title       String     
+  description String?    
+  rewardTea   Int        
+  actionType  String     @unique 
+  isActive    Boolean    @default(true)
   
-  kickoffTime    DateTime
-  homeScore      Int      @default(0)
-  awayScore      Int      @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  @@map("matches")
+  userProgress UserTask[]
+
+  @@map("tasks")
+}
+
+model UserTask {
+  id          String   @id @default(uuid())
+  userId      String
+  taskId      String
+  completedAt DateTime @default(now())
+  dateKey     String   
+
+  user        User     @relation(fields: [userId], references: [id])
+  task        Task     @relation(fields: [taskId], references: [id])
+
+  @@unique([userId, taskId, dateKey])
+  @@map("user_tasks")
 }
