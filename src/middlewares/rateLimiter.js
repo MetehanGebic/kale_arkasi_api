@@ -1,5 +1,4 @@
 import rateLimit from 'express-rate-limit';
-
 // Genel API istekleri için limit: Dakikada 200 istek
 export const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 dakika
@@ -11,7 +10,6 @@ export const apiLimiter = rateLimit({
   standardHeaders: true, // `RateLimit-*` başlıklarını döner
   legacyHeaders: false, // `X-RateLimit-*` başlıklarını devre dışı bırakır
 });
-
 // Login ve Register istekleri için limit: 10 dakikada 5 istek
 export const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 dakika

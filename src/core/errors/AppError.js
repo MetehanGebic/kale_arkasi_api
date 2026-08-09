@@ -4,9 +4,7 @@ class AppError extends Error {
     this.statusCode = statusCode;
     this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
     this.isOperational = true; // Programcı hatası değil, beklenen/kontrollü hata
-
     Error.captureStackTrace(this, this.constructor);
   }
 }
-
 export default AppError;

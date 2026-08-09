@@ -25,7 +25,6 @@ export const claimDailyTea = async (req, res) => {
     res.status(500).json({ success: false, message: 'Sunucu tarafında bir hata oluştu.' });
   }
 };
-
 // Uygulama içindeki "Kahvehanenin Ağaları" kartını besler.
 export const getLeaderboard = async (req, res) => {
   try {

@@ -34,7 +34,7 @@ const initTransporter = async () => {
 export const sendEmail = async (options) => {
   const t = await initTransporter();
   const mailOptions = {
-    from: '"Skorla!" <noreply@skorla.com>',
+    from: `"Skorla!" <${process.env.SMTP_USER || 'noreply@skorla.com'}>`,
     to: options.to,
     subject: options.subject,
     text: options.text,
@@ -46,4 +46,6 @@ export const sendEmail = async (options) => {
   if (info.messageId && (!process.env.SMTP_USER || process.env.SMTP_USER === 'ethereal.user')) {
     console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
   }
+  
+  return info;
 };

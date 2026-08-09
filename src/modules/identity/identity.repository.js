@@ -23,7 +23,7 @@ class IdentityRepository {
       include: { favoriteClub: true },
     });
   }
-
+  
   async getAllClubs() {
     // Sadece aktif takımları getir ve gereksiz verileri (createdAt vb.) UI'a gönderme
     return prisma.club.findMany({
