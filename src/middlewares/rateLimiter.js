@@ -16,9 +16,10 @@ export const apiLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 dakika
   max: 5, // IP başına maksimum 5 istek
+  skipSuccessfulRequests: true, // Başarılı giriş/kayıt işlemlerini limite sayma
   message: {
     success: false,
-    message: 'Çok fazla başarısız deneme yaptınız. Şifrenizi unuttuysanız "Şifremi Unuttum" adımından ilerleyebilirsiniz. Lütfen daha sonra tekrar deneyin.',
+    message: 'Çok fazla ardışık işlem yaptınız. Lütfen 10 dakika sonra tekrar deneyin.',
   },
   standardHeaders: true,
   legacyHeaders: false,
