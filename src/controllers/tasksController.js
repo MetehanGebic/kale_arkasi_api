@@ -19,8 +19,11 @@ export const completeTask = async (req, res) => {
 
     const result = await tasksService.completeTask(userId, taskId);
 
-    // İşlem başarılıysa bağlı tüm client'lara Liderlik tablosu güncellendi bilgisi geç
-    getIO().emit('leaderboard_updated');
+    try {
+      getIO().emit('leaderboard_updated');
+    } catch (socketError) {
+      console.error('[TasksController] Liderlik tablosu bildirimi gönderilemedi:', socketError);
+    }
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {

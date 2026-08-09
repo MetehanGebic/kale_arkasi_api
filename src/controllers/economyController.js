@@ -7,9 +7,12 @@ export const claimDailyTea = async (req, res) => {
     const userId = req.user.id;
 
     const result = await economyService.claimDailyTea(userId);
-    
-    // İşlem başarılıysa bağlı tüm client'lara Liderlik tablosu güncellendi bilgisi geç
-    getIO().emit('leaderboard_updated');
+
+    try {
+      getIO().emit('leaderboard_updated');
+    } catch (socketError) {
+      console.error('[EconomyController] Liderlik tablosu bildirimi gönderilemedi:', socketError);
+    }
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {

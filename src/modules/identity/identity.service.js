@@ -17,6 +17,7 @@ class IdentityService {
     const user = await identityRepository.createUser({
       username,
       email,
+      password: hashedPassword,
       favoriteClubId,
     });
     const token = this._generateToken(user);
