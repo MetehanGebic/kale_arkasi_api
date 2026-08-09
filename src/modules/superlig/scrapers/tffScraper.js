@@ -73,32 +73,46 @@ export async function scrapeFixtures() {
   console.log('[TFF Scraper] Fikstür çekiliyor...');
   try {
     for (let week = 1; week <= 34; week++) {
-      const response = await axios.get(`${TFF_BASE_URL}?pageID=198&hafta=${week}`, { headers, httpsAgent });
+      const url = `${TFF_BASE_URL}?pageID=198&hafta=${week}`;
+      const response = await axios.get(url, { headers, httpsAgent });
       const $ = cheerio.load(response.data);
-      
-      const rows = $('span[id*="_lblMacKodu"]').closest('tr');
+
       const fixtures = [];
-
+      const rows = $('tr.haftaninMaclariTr');
+      
       rows.each((i, row) => {
-        const macKoduSpan = $(row).find('span[id*="_lblMacKodu"]');
-        const tffMacIdMatch = macKoduSpan.text().trim().match(/(\d+)/);
-        if (!tffMacIdMatch) return;
-        const tffMacId = parseInt(tffMacIdMatch[1], 10);
+        const dateStr = $(row).find('span[id*="_lblTarih"]').text().trim();
+        const timeStr = $(row).find('span[id*="_lblSaat"]').text().trim();
 
-        const dateStr = $(row).find('span[id*="_lblTarih"]').text().trim(); // "11.08.2024"
-        const timeStr = $(row).find('span[id*="_lblSaat"]').text().trim(); // "19:15"
-        
         let matchDate = new Date();
         if (dateStr && timeStr) {
           const [d, m, y] = dateStr.split('.');
           const [h, min] = timeStr.split(':');
           if (y && m && d && h && min) {
-            matchDate = new Date(`${y}-${m}-${d}T${h}:${min}:00+03:00`); // TR saati
+            matchDate = new Date(`${y}-${m}-${d}T${h}:${min}:00+03:00`);
           }
         }
 
-        const homeLink = $(row).find('span[id*="_lblTakim1"]').find('a').attr('href');
-        const awayLink = $(row).find('span[id*="_lblTakim2"]').find('a').attr('href');
+        const scoreLink = $(row).find('.haftaninMaclariSkor a').attr('href');
+        let tffMacId = 0;
+        if (scoreLink) {
+          const matchIdMatch = scoreLink.match(/macId=(\d+)/i);
+          if (matchIdMatch) tffMacId = parseInt(matchIdMatch[1], 10);
+        }
+        // Eğer maç henüz oynanmadıysa skor linki olmayabilir veya macId 0 kalabilir
+        // TFF genelde her maçın bir detay sayfasına link verir, oradan macId alabiliriz.
+        if (tffMacId === 0) {
+           const detayLink = $(row).find('.haftaninMaclariDetay a').attr('href');
+           if (detayLink) {
+             const matchIdMatch = detayLink.match(/macId=(\d+)/i);
+             if (matchIdMatch) tffMacId = parseInt(matchIdMatch[1], 10);
+           }
+        }
+        
+        if (tffMacId === 0) return; // Mac ID bulunamadıysa geç
+
+        const homeLink = $(row).find('.haftaninMaclariEv a').attr('href');
+        const awayLink = $(row).find('.haftaninMaclariDeplasman a').attr('href');
         if (!homeLink || !awayLink) return;
 
         const homeIdMatch = homeLink.match(/kulupID=(\d+)/i);
@@ -108,14 +122,14 @@ export async function scrapeFixtures() {
         const homeTffId = parseInt(homeIdMatch[1], 10);
         const awayTffId = parseInt(awayIdMatch[1], 10);
 
-        const scoreStr = $(row).find('span[id*="_Label1"]').text().trim(); // Örn: "1 - 1" veya boş/Tarih
+        // Skor <span>'lerinin text'i "- " veya "0 - 0" olabilir
         let homeScore = null, awayScore = null;
-        if (scoreStr.includes('-') && !scoreStr.includes('Tarih')) {
-          const parts = scoreStr.split('-');
-          homeScore = parseInt(parts[0].trim(), 10);
-          awayScore = parseInt(parts[1].trim(), 10);
-          if (isNaN(homeScore)) homeScore = null;
-          if (isNaN(awayScore)) awayScore = null;
+        const scoreSpans = $(row).find('.haftaninMaclariSkor span').map((i, el) => $(el).text().trim()).get();
+        if (scoreSpans.length >= 2 && scoreSpans[0] !== '' && scoreSpans[1] !== '') {
+           homeScore = parseInt(scoreSpans[0], 10);
+           awayScore = parseInt(scoreSpans[1], 10);
+           if (isNaN(homeScore)) homeScore = null;
+           if (isNaN(awayScore)) awayScore = null;
         }
 
         fixtures.push({ tffMacId, week, matchDate, homeTffId, awayTffId, homeScore, awayScore });
