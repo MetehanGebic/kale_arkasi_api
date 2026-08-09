@@ -1,4 +1,5 @@
 import * as economyService from '../services/economyService.js';
+import { getIO } from '../core/socket.js';
 
 export const claimDailyTea = async (req, res) => {
   try {
@@ -6,6 +7,9 @@ export const claimDailyTea = async (req, res) => {
     const userId = req.user.id;
 
     const result = await economyService.claimDailyTea(userId);
+    
+    // İşlem başarılıysa bağlı tüm client'lara Liderlik tablosu güncellendi bilgisi geç
+    getIO().emit('leaderboard_updated');
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {

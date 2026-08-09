@@ -1,4 +1,6 @@
 import express from 'express';
+import http from 'http';
+import { initSocket } from './core/socket.js';
 import cors from 'cors';
 import 'dotenv/config';
 import economyRoutes from './routes/economyRoutes.js';
@@ -29,6 +31,9 @@ app.use('/api/tasks', tasksRoutes);
 // Bütün route'lardan sonra Error Handler eklenmeli
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Kahvehane kapılarını açtı: http://localhost:${PORT}`);
 });

@@ -1,4 +1,5 @@
 import * as tasksService from '../services/tasksService.js';
+import { getIO } from '../core/socket.js';
 
 export const getTasks = async (req, res) => {
   try {
@@ -17,6 +18,9 @@ export const completeTask = async (req, res) => {
     const { taskId } = req.params;
 
     const result = await tasksService.completeTask(userId, taskId);
+
+    // İşlem başarılıysa bağlı tüm client'lara Liderlik tablosu güncellendi bilgisi geç
+    getIO().emit('leaderboard_updated');
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {
