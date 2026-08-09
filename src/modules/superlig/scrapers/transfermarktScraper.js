@@ -11,91 +11,94 @@ export async function scrapeTransfers() {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     };
 
-    // 10 sayfaya kadar tarama
-    for (let page = 1; page <= 10; page++) {
+    // 5 sayfaya kadar tarama (En son transferler)
+    for (let page = 1; page <= 5; page++) {
       console.log(`[TM Scraper] Sayfa ${page} taranıyor...`);
-      const url = `${TM_BASE_URL}/super-lig/transfers/wettbewerb/TR1?page=${page}`;
+      const url = `${TM_BASE_URL}/transfers/neuestetransfers/statistik/plus/ajax/yw1/galerie/0/wettbewerb_id/TR1/plus/0/galerie/0/wettbewerb_id/TR1/verein_land_id//selectedOptionInternalType/nothingSelected/land_id//minMarktwert/0/maxMarktwert/500.000.000/minAbloese/0/maxAbloese/500.000.000/yt0/G%C3%B6ster/page/${page}`;
       const response = await axios.get(url, { headers });
       const $ = cheerio.load(response.data);
 
-      const rows = $('table.items tbody tr');
+      const rows = $('table.items > tbody > tr');
       if (rows.length === 0) break; // Sayfa boşsa döngüyü bitir
 
       const transfers = [];
 
       rows.each((i, row) => {
-        // Transfermarkt row yapısında .hauptlink içindeki a etiketi
         const $row = $(row);
         
-        // Transfer ID'si satırın id'si veya içindeki linklerden alınabilir
-        // Genelde transfer url'sinde "/transfer_id/123456" bulunur.
+        // Skip header/empty rows
+        if (!$row.find('td.hauptlink').length) return;
+
         const playerLinkNode = $row.find('td.hauptlink a').first();
         const playerUrl = playerLinkNode.attr('href') || '';
         const playerName = playerLinkNode.text().trim();
         
-        // Fotoğraf (genelde td'nin içindeki img.bilderleben)
-        const playerPhotoUrl = $row.find('td img').first().attr('data-src') || $row.find('td img').first().attr('src') || '';
+        const playerPhotoUrl = $row.find('td img.bilderrahmen-fixed').first().attr('data-src') || $row.find('td img.bilderrahmen-fixed').first().attr('src') || '';
 
-        // From Club ve To Club
-        // "Abgebender Verein" (Ayrılan) ve "Aufnehmender Verein" (Katılan)
-        // Tabloda soldaki takım Ayrılan, sağdaki takım Katılan'dır.
-        const clubsUrls = [];
-        $row.find('td.verein-wappen a').each((i, el) => {
-          clubsUrls.push($(el));
-        });
+        // The layout is:
+        // td -> table.inline-table (From Club)
+        // td -> table.inline-table (To Club)
+        const clubTables = $row.find('table.inline-table');
+        if (clubTables.length < 3) return; // Player info table + From Club + To Club
 
-        if (clubsUrls.length >= 2) {
-          const fromNode = clubsUrls[0];
-          const toNode = clubsUrls[1];
+        // The first inline-table is the player info, second is From Club, third is To Club
+        const fromClubTable = $(clubTables[1]);
+        const toClubTable = $(clubTables[2]);
 
-          const fromUrl = fromNode.attr('href') || '';
-          const toUrl = toNode.attr('href') || '';
-          
-          // "Kulüpsüz" Filtresi (verein/515)
-          if (toUrl.includes('verein/515')) {
-            return; // Atla
-          }
+        const fromNode = fromClubTable.find('td.hauptlink a').first();
+        const toNode = toClubTable.find('td.hauptlink a').first();
 
-          const fromClubName = fromNode.attr('title') || '';
-          const toClubName = toNode.attr('title') || '';
-          
-          const fromLogo = fromNode.find('img').attr('src') || '';
-          const toLogo = toNode.find('img').attr('src') || '';
-
-          // Verein ID'leri çıkar
-          const fromIdMatch = fromUrl.match(/verein\/(\d+)/);
-          const toIdMatch = toUrl.match(/verein\/(\d+)/);
-          const fromTmId = fromIdMatch ? parseInt(fromIdMatch[1], 10) : null;
-          const toTmId = toIdMatch ? parseInt(toIdMatch[1], 10) : null;
-
-          // Transfer_id'yi bulmak için satırdaki profiline giden linke veya tr id'ye bakalım
-          // Genelde TR tag'inin ID'sinde saklıdır (örn: id="transfer_123456") 
-          // Ya da bulunamıyorsa oyuncu_id + from_club + to_club hashi kullanabiliriz.
-          // Burada oyuncu profil URL'sinde id var (/profil/spieler/123)
-          const spielerIdMatch = playerUrl.match(/spieler\/(\d+)/);
-          const spielerId = spielerIdMatch ? spielerIdMatch[1] : `UNK_${Math.random()}`;
-          const tmTransferId = parseInt(`${spielerId}${fromTmId || 0}${toTmId || 0}`.substring(0, 15), 10); // Pseudo-id if actual transfer_id isn't in DOM. Transfermarkt often hides actual transfer_id in nested links.
-
-          const feeStr = $row.find('td.rechts.hauptlink').text().trim().toLowerCase() || $row.find('td.zelle-abloese').text().trim().toLowerCase();
-          
-          let feeType = 'UNDISCLOSED';
-          if (feeStr.includes('bedelsiz')) feeType = 'FREE';
-          else if (feeStr.includes('kiralık') || feeStr.includes('kiralik')) feeType = 'LOAN';
-          else if (feeStr.includes('€')) feeType = 'FEE';
-
-          transfers.push({
-            tmTransferId,
-            playerName,
-            playerPhotoUrl,
-            fromClubName,
-            fromClubLogoUrl: fromLogo,
-            fromTmId,
-            toClubName,
-            toClubLogoUrl: toLogo,
-            toTmId,
-            feeType
-          });
+        const fromUrl = fromNode.attr('href') || '';
+        const toUrl = toNode.attr('href') || '';
+        
+        // "Kulüpsüz" Filtresi (verein/515)
+        if (toUrl.includes('verein/515')) {
+          return;
         }
+
+        const fromClubName = fromNode.text().trim() || '';
+        const toClubName = toNode.text().trim() || '';
+        
+        const fromLogo = fromClubTable.find('img.tiny_wappen').attr('src') || '';
+        const toLogo = toClubTable.find('img.tiny_wappen').attr('src') || '';
+
+        const fromIdMatch = fromUrl.match(/verein\/(\d+)/);
+        const toIdMatch = toUrl.match(/verein\/(\d+)/);
+        const fromTmId = fromIdMatch ? parseInt(fromIdMatch[1], 10) : null;
+        const toTmId = toIdMatch ? parseInt(toIdMatch[1], 10) : null;
+
+        const spielerIdMatch = playerUrl.match(/spieler\/(\d+)/);
+        const spielerId = spielerIdMatch ? spielerIdMatch[1] : `UNK_${Math.random()}`;
+        
+        // TM usually puts transfer_id in the last column link
+        const transferLink = $row.find('td.rechts.hauptlink a').attr('href') || '';
+        const transferIdMatch = transferLink.match(/transfer_id\/(\d+)/);
+        let tmTransferId = 0;
+        if (transferIdMatch) {
+           tmTransferId = parseInt(transferIdMatch[1], 10);
+        } else {
+           tmTransferId = parseInt(`${spielerId}${fromTmId || 0}${toTmId || 0}`.substring(0, 15), 10);
+        }
+
+        const feeStr = $row.find('td.rechts.hauptlink').text().trim().toLowerCase() || $row.find('td.zelle-abloese').text().trim().toLowerCase();
+        
+        let feeType = 'UNDISCLOSED';
+        if (feeStr.includes('bedelsiz')) feeType = 'FREE';
+        else if (feeStr.includes('kiralık') || feeStr.includes('kiralik')) feeType = 'LOAN';
+        else if (feeStr.includes('€') || feeStr.match(/\d/)) feeType = 'FEE';
+
+        transfers.push({
+          tmTransferId,
+          playerName,
+          playerPhotoUrl,
+          fromClubName,
+          fromClubLogoUrl: fromLogo,
+          fromTmId,
+          toClubName,
+          toClubLogoUrl: toLogo,
+          toTmId,
+          feeType
+        });
       });
 
       for (const t of transfers) {
