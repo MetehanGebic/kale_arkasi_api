@@ -7,7 +7,7 @@ export const getStandings = async () => {
     orderBy: { rank: 'asc' },
     include: {
       club: {
-        select: { id: true, name: true, logoUrl: true, primaryColor: true }
+        select: { id: true, name: true, slug: true, logoUrl: true, primaryColor: true }
       }
     }
   });
@@ -22,8 +22,8 @@ export const getFixtures = async (week) => {
       { matchDate: 'asc' }
     ],
     include: {
-      homeClub: { select: { id: true, name: true, logoUrl: true } },
-      awayClub: { select: { id: true, name: true, logoUrl: true } }
+      homeClub: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      awayClub: { select: { id: true, name: true, slug: true, logoUrl: true } }
     }
   });
 };
@@ -47,8 +47,8 @@ export const getTransfers = async (clubId) => {
     where: whereClause,
     orderBy: { createdAt: 'desc' },
     include: {
-      fromClub: { select: { id: true, name: true, logoUrl: true } },
-      toClub: { select: { id: true, name: true, logoUrl: true } }
+      fromClub: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      toClub: { select: { id: true, name: true, slug: true, logoUrl: true } }
     },
     take: clubId ? undefined : 25
   });
