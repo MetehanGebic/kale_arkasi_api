@@ -88,6 +88,7 @@ export const getLeaderboard = async (limit = 10) => {
       favoriteClub: {
         select: {
           name: true,
+          slug: true,
           primaryColor: true,
           secondaryColor: true,
           logoUrl: true,
