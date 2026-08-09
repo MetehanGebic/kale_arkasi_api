@@ -22,8 +22,18 @@ export const claimDailyTea = async (req, res) => {
   }
 };
 
+// Uygulama içindeki "Kahvehanenin Ağaları" kartını besler.
+export const getLeaderboard = async (req, res) => {
+  try {
+    const leaderboard = await economyService.getLeaderboard();
+    res.status(200).json({ success: true, data: leaderboard });
+  } catch (error) {
+    console.error('[EconomyController getLeaderboard Error]:', error);
+    res.status(500).json({ success: false, message: 'Liderlik tablosu getirilirken bir hata oluştu.' });
+  }
+};
+
 // Flutter tarafında EconomyRepository.getBalance() bu endpoint'i çağırır.
-// Eksik olduğu için bakiye ekranda hep 0 görünüyordu.
 export const getStatus = async (req, res) => {
   try {
     const userId = req.user.id;

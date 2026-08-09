@@ -12,4 +12,7 @@ router.post('/daily-tea', verifyToken, economyController.claimDailyTea);
 // görünüyordu (fetchBalance hatayı sessizce yutuyor). Eksik olan buydu.
 router.get('/status', verifyToken, economyController.getStatus);
 
+// Kahvehanenin Ağaları kartı için: en çok çay biriktiren kullanıcılar.
+router.get('/leaderboard', verifyToken, economyController.getLeaderboard);
+
 export default router;

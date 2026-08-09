@@ -54,3 +54,28 @@ export const getStatus = async (userId) => {
 
   return { teaBalance: user.teaBalance };
 };
+
+// En çok çay biriktiren kullanıcıları döner (varsayılan ilk 10).
+// Herhangi bir yan etkisi yoktur, sadece okur.
+export const getLeaderboard = async (limit = 10) => {
+  const topUsers = await prisma.user.findMany({
+    orderBy: { teaBalance: 'desc' },
+    take: limit,
+    select: {
+      id: true,
+      username: true,
+      teaBalance: true,
+      favoriteClub: {
+        select: { name: true, primaryColor: true, logoUrl: true },
+      },
+    },
+  });
+
+  return topUsers.map((user, index) => ({
+    rank: index + 1,
+    id: user.id,
+    username: user.username,
+    teaBalance: user.teaBalance,
+    club: user.favoriteClub,
+  }));
+};
