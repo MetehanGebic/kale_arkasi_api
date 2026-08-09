@@ -34,7 +34,7 @@ const initTransporter = async () => {
 export const sendEmail = async (options) => {
   const t = await initTransporter();
   const mailOptions = {
-    from: '"Kale Arkası" <noreply@kalearkasi.com>',
+    from: '"Skorla!" <noreply@skorla.com>',
     to: options.to,
     subject: options.subject,
     text: options.text,
