@@ -14,6 +14,8 @@ const forgotPasswordSchema = z.object({
   email: z.string().email("Geçerli bir e-posta adresi giriniz."),
 });
 const resetPasswordSchema = z.object({
+  email: z.string().email("Geçerli bir e-posta adresi giriniz."),
+  code: z.string().min(6, "Kod 6 haneli olmalıdır.").max(6),
   password: z.string().min(6, "Şifre en az 6 karakter olmalıdır."),
 });
 class IdentityController {
@@ -52,10 +54,8 @@ class IdentityController {
     });
   }
   async resetPassword(req, res) {
-    // Parametreden token'ı, body'den ise yeni şifreyi alıyoruz
-    const token = req.params.token;
-    const { password } = resetPasswordSchema.parse(req.body);
-    const result = await identityService.resetPassword({ token, newPassword: password });
+    const { email, code, password } = resetPasswordSchema.parse(req.body);
+    const result = await identityService.resetPassword({ email, token: code, newPassword: password });
     return res.status(200).json({
       success: true,
       message: result.message,

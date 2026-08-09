@@ -46,9 +46,10 @@ class IdentityRepository {
     });
   }
 
-  async findUserByValidResetToken(hashedToken) {
+  async findUserByEmailAndValidResetToken(email, hashedToken) {
     return prisma.user.findFirst({
       where: {
+        email: email,
         resetPasswordToken: hashedToken,
         resetPasswordExpires: { gte: new Date() }
       }

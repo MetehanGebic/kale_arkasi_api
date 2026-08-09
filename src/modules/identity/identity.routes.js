@@ -9,5 +9,5 @@ router.post('/register', authLimiter, asyncHandler(identityController.register.b
 router.post('/login', authLimiter, asyncHandler(identityController.login.bind(identityController)));
 // Şifre sıfırlama işlemleri (Bunlar da brute force saldırılarına karşı authLimiter kullanabilir)
 router.post('/forgot-password', authLimiter, asyncHandler(identityController.forgotPassword.bind(identityController)));
-router.post('/reset-password/:token', authLimiter, asyncHandler(identityController.resetPassword.bind(identityController)));
+router.post('/reset-password', authLimiter, asyncHandler(identityController.resetPassword.bind(identityController)));
 export default router;

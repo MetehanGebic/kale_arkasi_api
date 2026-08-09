@@ -47,15 +47,12 @@ class IdentityService {
   async forgotPassword(email) {
     const user = await identityRepository.findUserByEmail(email);
     if (!user) {
-      // Güvenlik açısından "Bu e-postaya ait kullanıcı bulunamadı" demek yerine,
-      // her halükarda başarılı dönüyoruz (User enumeration engellemek için)
-      return { message: 'Eğer sistemde kayıtlıysa, şifre sıfırlama bağlantısı e-posta adresinize gönderildi.' };
+      return { message: 'Eğer sistemde kayıtlıysa, şifre sıfırlama kodu e-posta adresinize gönderildi.' };
     }
-    // 1. Rastgele bir token oluştur (64 karakter hex)
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    // 1. 6 Haneli rastgele bir kod oluştur
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     
-
-    // 2. Token'ı veritabanına kaydetmeden önce hash'le (güvenlik için)
+    // 2. Kodu veritabanına kaydetmeden önce hash'le (güvenlik için)
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     // 3. Geçerlilik süresi (örneğin 15 dakika)
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -65,19 +62,18 @@ class IdentityService {
       resetPasswordExpires: expiresAt
     });
     // 5. E-posta Gönderimi
-    const resetUrl = `http://localhost:3000/api/identity/reset-password/${resetToken}`;
     const message = `
-      <h1>Şifre Sıfırlama İsteği</h1>
-      <p>Kale Arkası hesabınız için şifre sıfırlama talebinde bulundunuz.</p>
-      <p>Şifrenizi sıfırlamak için aşağıdaki linki kullanın (veya post isteği atın):</p>
-      <a href="${resetUrl}" target="_blank">${resetUrl}</a>
-      <p>Bu bağlantı 15 dakika sonra geçerliliğini yitirecektir.</p>
+      <h1>Şifre Sıfırlama Kodu</h1>
+      <p>Skorla! hesabınız için şifre sıfırlama talebinde bulundunuz.</p>
+      <p>Şifrenizi sıfırlamak için uygulamada aşağıdaki 6 haneli kodu kullanın:</p>
+      <h2 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 5px;">${resetToken}</h2>
+      <p>Bu kod 15 dakika sonra geçerliliğini yitirecektir.</p>
       <p>Eğer bu işlemi siz yapmadıysanız lütfen bu e-postayı dikkate almayın.</p>
     `;
     try {
       await sendEmail({
         to: user.email,
-        subject: 'Kale Arkası - Şifre Sıfırlama',
+        subject: 'Skorla! - Şifre Sıfırlama Kodu',
         html: message,
       });
     } catch (error) {
@@ -90,16 +86,16 @@ class IdentityService {
       console.error('[forgotPassword Error]', error);
       throw new AppError('E-posta gönderilirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.', 500);
     }
-    return { message: 'Eğer sistemde kayıtlıysa, şifre sıfırlama bağlantısı e-posta adresinize gönderildi.' };
+    return { message: 'Eğer sistemde kayıtlıysa, şifre sıfırlama kodu e-posta adresinize gönderildi.' };
   }
-  async resetPassword({ token, newPassword }) {
+  async resetPassword({ email, token, newPassword }) {
     // 1. Gelen düz token'ı hash'le (Çünkü veritabanında hashli tutuyoruz)
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    // 2. Token ile eşleşen ve süresi dolmamış kullanıcıyı bul
-    const user = await identityRepository.findUserByValidResetToken(hashedToken);
+    // 2. E-posta ve Token ile eşleşen ve süresi dolmamış kullanıcıyı bul
+    const user = await identityRepository.findUserByEmailAndValidResetToken(email, hashedToken);
     
     if (!user) {
-      throw new AppError('Token geçersiz veya süresi dolmuş.', 400);
+      throw new AppError('Kod geçersiz veya süresi dolmuş.', 400);
     }
     // 3. Yeni şifreyi şifrele (hash)
     const saltRounds = 12;
