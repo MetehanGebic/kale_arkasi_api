@@ -37,6 +37,33 @@ for (const club of clubs) {
     }
   }
 
+  // Görev verileri (HomeScreen'deki "Çay Ocağı" kartıyla eşleşiyor)
+  const tasks = [
+    {
+      title: 'Günün Haberini Oku',
+      description: 'Bugünkü kulüp haberini oku.',
+      rewardTea: 5,
+      actionType: 'READ_DAILY_NEWS',
+    },
+    {
+      title: 'İlk Yorumunu Yap',
+      description: 'Bir maç veya haber altına yorum yap.',
+      rewardTea: 10,
+      actionType: 'FIRST_COMMENT',
+    },
+  ];
+
+  for (const task of tasks) {
+    const existingTask = await prisma.task.findUnique({ where: { actionType: task.actionType } });
+
+    if (!existingTask) {
+      await prisma.task.create({ data: task });
+      console.log(`✅ Görev eklendi: ${task.title}`);
+    } else {
+      console.log(`⚡ Görev zaten mevcut: ${task.title}`);
+    }
+  }
+
   console.log('✅ Tohumlama tamamlandı! Kahvehane takımlara hazır.');
 }
 
