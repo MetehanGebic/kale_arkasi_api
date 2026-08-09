@@ -12,3 +12,17 @@ export const claimDailyTea = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+// Flutter tarafında EconomyRepository.getBalance() bu endpoint'i çağırır.
+// Eksik olduğu için bakiye ekranda hep 0 görünüyordu.
+export const getStatus = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await economyService.getStatus(userId);
+
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};

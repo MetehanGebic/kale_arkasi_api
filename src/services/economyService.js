@@ -31,3 +31,16 @@ export const claimDailyTea = async (userId) => {
     newBalance: updatedUser.teaBalance,
   };
 };
+
+// Flutter tarafındaki HomeScreen açılışında (fetchBalance) çağrılıyor.
+// Bakiyeyi DEĞİŞTİRMEZ, sadece mevcut değeri okur.
+export const getStatus = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { teaBalance: true },
+  });
+
+  if (!user) throw new Error('Kullanıcı bulunamadı.');
+
+  return { teaBalance: user.teaBalance };
+};
