@@ -6,7 +6,8 @@ export const getTasks = async (req, res) => {
     const tasks = await tasksService.getTasksForUser(userId);
     res.status(200).json({ success: true, data: tasks });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    console.error('[TasksController getTasks Error]:', error);
+    res.status(500).json({ success: false, message: 'Görevler getirilirken bir hata oluştu.' });
   }
 };
 
@@ -19,6 +20,14 @@ export const completeTask = async (req, res) => {
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    if (error.message === 'TASK_NOT_FOUND') {
+      return res.status(404).json({ success: false, message: 'Görev bulunamadı.' });
+    }
+    if (error.message === 'TASK_ALREADY_COMPLETED') {
+      return res.status(409).json({ success: false, message: 'Bu görevi bugün zaten tamamladın.' });
+    }
+
+    console.error('[TasksController completeTask Error]:', error);
+    res.status(500).json({ success: false, message: 'Sunucu tarafında bir hata oluştu.' });
   }
 };

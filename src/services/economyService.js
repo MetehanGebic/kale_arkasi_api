@@ -4,8 +4,12 @@ const DAILY_TEA_REWARD = 10;
 
 export const claimDailyTea = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  
-  if (!user) throw new Error('Kullanıcı bulunamadı.');
+
+  if (!user) {
+    const error = new Error('Kullanıcı bulunamadı.');
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
 
   const now = new Date();
 
@@ -13,7 +17,9 @@ export const claimDailyTea = async (userId) => {
     const diffInHours = Math.abs(now - user.lastDailyTeaClaimAt) / 36e5;
     if (diffInHours < 24) {
       const remainingHours = (24 - diffInHours).toFixed(1);
-      throw new Error(`Çay ocağı henüz demlenmedi! ${remainingHours} saat sonra tekrar gel.`);
+      const error = new Error(`Çay ocağı henüz demlenmedi! ${remainingHours} saat sonra tekrar gel.`);
+      error.code = 'TEA_NOT_READY';
+      throw error;
     }
   }
 
@@ -40,7 +46,11 @@ export const getStatus = async (userId) => {
     select: { teaBalance: true },
   });
 
-  if (!user) throw new Error('Kullanıcı bulunamadı.');
+  if (!user) {
+    const error = new Error('Kullanıcı bulunamadı.');
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
 
   return { teaBalance: user.teaBalance };
 };

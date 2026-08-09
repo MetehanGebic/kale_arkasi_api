@@ -40,7 +40,7 @@ export const completeTask = async (userId, taskId) => {
 
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task || !task.isActive) {
-    throw new Error('Görev bulunamadı.');
+    throw new Error('TASK_NOT_FOUND');
   }
 
   const alreadyDone = await prisma.userTask.findUnique({
@@ -49,24 +49,35 @@ export const completeTask = async (userId, taskId) => {
     },
   });
   if (alreadyDone) {
-    throw new Error('Bu görevi bugün zaten tamamladın.');
+    throw new Error('TASK_ALREADY_COMPLETED');
   }
 
   // Görev kaydı + bakiye artışı tek transaction'da: biri başarısız olursa
   // diğeri de geri alınır, yarım kalmış (görev var ama çay yok) durum oluşmaz.
-  const [, updatedUser] = await prisma.$transaction([
-    prisma.userTask.create({
-      data: { userId, taskId, dateKey },
-    }),
-    prisma.user.update({
-      where: { id: userId },
-      data: { teaBalance: { increment: task.rewardTea } },
-    }),
-  ]);
+  try {
+    const [, updatedUser] = await prisma.$transaction([
+      prisma.userTask.create({
+        data: { userId, taskId, dateKey },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { teaBalance: { increment: task.rewardTea } },
+      }),
+    ]);
 
-  return {
-    message: `"${task.title}" tamamlandı!`,
-    reward: task.rewardTea,
-    newBalance: updatedUser.teaBalance,
-  };
+    return {
+      message: `"${task.title}" tamamlandı!`,
+      reward: task.rewardTea,
+      newBalance: updatedUser.teaBalance,
+    };
+  } catch (error) {
+    // Yukarıdaki alreadyDone kontrolüyle transaction arasındaki kısacık
+    // aralıkta aynı görev eşzamanlı iki istekle tamamlanmaya çalışılırsa,
+    // @@unique([userId, taskId, dateKey]) kısıtı Prisma P2002 hatası fırlatır.
+    // Bunu da "zaten tamamlandı" olarak ele alıyoruz.
+    if (error.code === 'P2002') {
+      throw new Error('TASK_ALREADY_COMPLETED');
+    }
+    throw error;
+  }
 };
