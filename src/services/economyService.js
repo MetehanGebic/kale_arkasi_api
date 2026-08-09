@@ -57,8 +57,28 @@ export const getStatus = async (userId) => {
 
 // En çok çay biriktiren kullanıcıları döner (varsayılan ilk 10).
 // Herhangi bir yan etkisi yoktur, sadece okur.
+//
+// UYGULAMANIN BAŞLARINDA 10-20 ÇAYLI KULLANICILARIN LİSTEDE GÖRÜNMESİNİ
+// İSTEMİYORSAN: aşağıdaki DEFAULT_MIN_LEADERBOARD_BALANCE değerini
+// değiştirebilir, ya da kod dokunmadan .env dosyana
+//   LEADERBOARD_MIN_BALANCE=100
+// satırını ekleyip sunucuyu yeniden başlatabilirsin (.env varsa kod
+// değişikliği gerekmez).
+const DEFAULT_MIN_LEADERBOARD_BALANCE = 50;
+
+function getMinLeaderboardBalance() {
+  const raw = process.env.LEADERBOARD_MIN_BALANCE;
+  const parsed = Number(raw);
+  return raw !== undefined && raw !== '' && Number.isFinite(parsed) && parsed >= 0
+    ? parsed
+    : DEFAULT_MIN_LEADERBOARD_BALANCE;
+}
+
 export const getLeaderboard = async (limit = 10) => {
+  const minBalance = getMinLeaderboardBalance();
+
   const topUsers = await prisma.user.findMany({
+    where: { teaBalance: { gte: minBalance } },
     orderBy: { teaBalance: 'desc' },
     take: limit,
     select: {
@@ -66,7 +86,12 @@ export const getLeaderboard = async (limit = 10) => {
       username: true,
       teaBalance: true,
       favoriteClub: {
-        select: { name: true, primaryColor: true, logoUrl: true },
+        select: {
+          name: true,
+          primaryColor: true,
+          secondaryColor: true,
+          logoUrl: true,
+        },
       },
     },
   });
