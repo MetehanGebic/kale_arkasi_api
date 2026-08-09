@@ -16,8 +16,16 @@ model Club {
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  tffKulupId      Int? @unique
+  transfermarktId Int? @unique
 
-  users          User[]
+
+  users            User[]
+  homeFixtures     Fixture[]        @relation("FixtureHome")
+  awayFixtures     Fixture[]        @relation("FixtureAway")
+  standingsEntries StandingsEntry[]
+  transfersFrom    Transfer[]       @relation("TransferFrom")
+  transfersTo      Transfer[]       @relation("TransferTo")
 
   // Prisma'ya veritabanındaki "clubs" tablosunu kullanmasını söyler
   @@map("clubs") 
@@ -35,6 +43,9 @@ model User {
   favoriteClubId      String
   favoriteClub        Club       @relation(fields: [favoriteClubId], references: [id])
   
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 
@@ -42,6 +53,69 @@ model User {
 
   // Prisma'ya veritabanındaki "users" tablosunu kullanmasını söyler
   @@map("users") 
+}
+
+model Fixture {
+  id          String   @id @default(uuid())
+  tffMacId    Int      @unique        // TFF'nin macId'si — tekilleştirme anahtarı
+  week        Int                     // 1-34 arası hafta no
+  matchDate   DateTime                // tarih+saat birleşik (TFF'de ayrı ayrı geliyor, birleştireceğim)
+  homeClubId  String
+  homeClub    Club     @relation("FixtureHome", fields: [homeClubId], references: [id])
+  awayClubId  String
+  awayClub    Club     @relation("FixtureAway", fields: [awayClubId], references: [id])
+  homeScore   Int?                    // oynanmadıysa null
+  awayScore   Int?
+  updatedAt   DateTime @updatedAt
+  @@map("fixtures")
+}
+
+model StandingsEntry {
+  id           String @id @default(uuid())
+  clubId       String @unique
+  club         Club   @relation(fields: [clubId], references: [id])
+  rank         Int
+  played       Int    // O
+  won          Int    // G
+  drawn        Int    // B
+  lost         Int    // M
+  goalsFor     Int    // A
+  goalsAgainst Int    // Y
+  goalDiff     Int    // AV
+  points       Int    // P
+  updatedAt    DateTime @updatedAt
+  @@map("standings_entries")
+}
+
+model TopScorer {
+  id         String @id @default(uuid())
+  rank       Int
+  tffKisiId  Int    @unique   // TFF'nin oyuncu ID'si
+  playerName String
+  clubName   String           // düz metin — TFF gol krallığında kulüpID linki var ama alt lig takımı da olabilir, mecburi bağlamıyorum
+  goals      Int
+  updatedAt  DateTime @updatedAt
+  @@map("top_scorers")
+}
+
+model Transfer {
+  id              String    @id @default(uuid())
+  tmTransferId    Int       @unique   // Transfermarkt transfer_id — tekilleştirme anahtarı
+  playerName      String
+  playerPhotoUrl  String?
+  fromClubName    String
+  fromClubLogoUrl String?
+  fromClubId      String?             // bizim 18 kulüpten biriyse bağlanır, değilse null
+  fromClub        Club?     @relation("TransferFrom", fields: [fromClubId], references: [id])
+  toClubName      String
+  toClubLogoUrl   String?
+  toClubId        String?
+  toClub          Club?     @relation("TransferTo", fields: [toClubId], references: [id])
+  feeType         String    // FEE | LOAN | FREE | UNDISCLOSED
+  feeAmount       Float?              // sadece feeType=FEE ve tutar belliyse dolu
+  feeCurrency     String?             // "EUR"
+  createdAt       DateTime  @default(now())
+  @@map("transfers")
 }
 
 model Task {

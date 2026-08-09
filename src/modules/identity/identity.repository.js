@@ -38,6 +38,22 @@ class IdentityRepository {
       }
     });
   }
+
+  async updateUser(userId, data) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: data
+    });
+  }
+
+  async findUserByValidResetToken(hashedToken) {
+    return prisma.user.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { gte: new Date() }
+      }
+    });
+  }
 }
 
 export default new IdentityRepository();
