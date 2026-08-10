@@ -71,7 +71,22 @@ export async function scrapeSquads() {
       }
 
       const fullUrl = `${TM_BASE_URL}${squadUrlPath}`;
-      console.log(`[TM Squad Scraper] ${club.name} kadrosu çekiliyor...`);
+      const startseiteUrl = fullUrl.replace('/kader/', '/startseite/');
+      
+      let coachName = null;
+      try {
+        await delay(1000 + Math.random() * 1000);
+        const startRes = await axios.get(startseiteUrl, { headers });
+        const $s = cheerio.load(startRes.data);
+        const coachLink = $s('a[href*="/profil/trainer/"]');
+        if (coachLink.length > 0) {
+          coachName = coachLink.first().text().trim();
+        }
+      } catch(e) {
+        console.log(`[TM Squad Scraper] Teknik direktör bulunamadı: ${club.name}`);
+      }
+
+      console.log(`[TM Squad Scraper] ${club.name} kadrosu çekiliyor... (TD: ${coachName || 'Yok'})`);
 
       let response;
       let retries = 3;
@@ -102,7 +117,7 @@ export async function scrapeSquads() {
         const $row = $(row);
         
         // Forma No
-        const shirtNumberText = $row.find('td.rn_nummer').text().trim();
+        const shirtNumberText = $row.find('.rn_nummer').text().trim();
         const shirtNumber = shirtNumberText || null;
 
         // Player ID & Link
@@ -115,10 +130,10 @@ export async function scrapeSquads() {
         if (playerHref) {
            const idMatch = playerHref.match(/spieler\/(\d+)/);
            if (idMatch) tmPlayerId = parseInt(idMatch[1], 10);
-        }
+          }
 
         // Photo URL
-        const img = $row.find('td img.bilderrahmen-layout');
+        const img = $row.find('img.bilderrahmen-fixed, img.bilderrahmen-layout');
         let photoUrl = img.attr('data-src') || img.attr('src') || null;
         if (photoUrl && photoUrl.includes('default.jpg')) {
            photoUrl = null;
@@ -135,6 +150,10 @@ export async function scrapeSquads() {
         const natImg = $row.find('td.zentriert img.flaggenrahmen').first();
         const nationality = natImg.attr('title') || null;
 
+        // Market Value
+        const valText = $row.find('td.rechts.hauptlink a').text().trim();
+        const marketValue = valText || null;
+
         if (tmPlayerId && playerName) {
           playersToInsert.push({
             tmPlayerId,
@@ -143,12 +162,21 @@ export async function scrapeSquads() {
             position,
             shirtNumber,
             nationality,
+            marketValue,
             clubId: club.id
           });
         }
       });
 
-      // Insert/Update in DB
+      // Insert/Update Coach in Club
+      if (coachName) {
+        await prisma.club.update({
+          where: { id: club.id },
+          data: { coachName }
+        });
+      }
+
+      // Insert/Update Players in DB
       let added = 0;
       for (const p of playersToInsert) {
         await prisma.player.upsert({
@@ -159,6 +187,7 @@ export async function scrapeSquads() {
             position: p.position,
             shirtNumber: p.shirtNumber,
             nationality: p.nationality,
+            marketValue: p.marketValue,
             clubId: p.clubId,
             updatedAt: new Date()
           },
@@ -169,6 +198,7 @@ export async function scrapeSquads() {
             position: p.position,
             shirtNumber: p.shirtNumber,
             nationality: p.nationality,
+            marketValue: p.marketValue,
             clubId: p.clubId
           }
         });

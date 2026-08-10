@@ -14,6 +14,7 @@ export const getStandings = async () => {
           slug: true, 
           logoUrl: true, 
           primaryColor: true,
+          coachName: true,
           players: true // Fetch squad
         }
       }
