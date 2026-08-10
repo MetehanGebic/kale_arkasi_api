@@ -45,12 +45,11 @@ export const getTransfers = async (clubId) => {
 
   return await prisma.transfer.findMany({
     where: whereClause,
-    orderBy: { createdAt: 'desc' },
+    orderBy: { updatedAt: 'desc' },
     include: {
       fromClub: { select: { id: true, name: true, slug: true, logoUrl: true } },
       toClub: { select: { id: true, name: true, slug: true, logoUrl: true } }
-    },
-    take: clubId ? undefined : 25
+    }
   });
 };
 

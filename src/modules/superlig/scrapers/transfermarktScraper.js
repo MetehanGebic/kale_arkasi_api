@@ -11,6 +11,7 @@ export async function scrapeTransfers() {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     };
 
+    const allTransfersToInsert = [];
     // 10 sayfaya kadar tarama (En son transferler)
     for (let page = 1; page <= 10; page++) {
       console.log(`[TM Scraper] Sayfa ${page} taranıyor...`);
@@ -112,33 +113,39 @@ export async function scrapeTransfers() {
         });
       });
 
-      for (const t of transfers) {
-        const fromClub = t.fromTmId ? await prisma.club.findUnique({ where: { transfermarktId: t.fromTmId } }) : null;
-        const toClub = t.toTmId ? await prisma.club.findUnique({ where: { transfermarktId: t.toTmId } }) : null;
+      allTransfersToInsert.push(...transfers);
+    } // Loop for pages end
 
-        await prisma.transfer.upsert({
-          where: { tmTransferId: t.tmTransferId },
-          update: {
-            playerPhotoUrl: t.playerPhotoUrl,
-            fromClubLogoUrl: t.fromClubLogoUrl,
-            toClubLogoUrl: t.toClubLogoUrl,
-            feeType: t.feeType
-          },
-          create: {
-            tmTransferId: t.tmTransferId,
-            playerName: t.playerName,
-            playerPhotoUrl: t.playerPhotoUrl,
-            fromClubName: t.fromClubName,
-            fromClubLogoUrl: t.fromClubLogoUrl,
-            fromClubId: fromClub ? fromClub.id : null,
-            toClubName: t.toClubName,
-            toClubLogoUrl: t.toClubLogoUrl,
-            toClubId: toClub ? toClub.id : null,
-            feeType: t.feeType
-          }
-        });
-      }
+    // En güncel transferin updatedAt'inin en büyük olması için listeyi ters çevirip insert edelim
+    allTransfersToInsert.reverse();
+
+    for (const t of allTransfersToInsert) {
+      const fromClub = t.fromTmId ? await prisma.club.findUnique({ where: { transfermarktId: t.fromTmId } }) : null;
+      const toClub = t.toTmId ? await prisma.club.findUnique({ where: { transfermarktId: t.toTmId } }) : null;
+
+      await prisma.transfer.upsert({
+        where: { tmTransferId: t.tmTransferId },
+        update: {
+          playerPhotoUrl: t.playerPhotoUrl,
+          fromClubLogoUrl: t.fromClubLogoUrl,
+          toClubLogoUrl: t.toClubLogoUrl,
+          feeType: t.feeType
+        },
+        create: {
+          tmTransferId: t.tmTransferId,
+          playerName: t.playerName,
+          playerPhotoUrl: t.playerPhotoUrl,
+          fromClubName: t.fromClubName,
+          fromClubLogoUrl: t.fromClubLogoUrl,
+          fromClubId: fromClub ? fromClub.id : null,
+          toClubName: t.toClubName,
+          toClubLogoUrl: t.toClubLogoUrl,
+          toClubId: toClub ? toClub.id : null,
+          feeType: t.feeType
+        }
+      });
     }
+
     console.log('[TM Scraper] Transfermarkt tamamlandı.');
   } catch (error) {
     console.error('[TM Scraper] Hata:', error.message);
