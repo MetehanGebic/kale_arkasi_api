@@ -26,6 +26,7 @@ model Club {
   standingsEntries StandingsEntry[]
   transfersFrom    Transfer[]       @relation("TransferFrom")
   transfersTo      Transfer[]       @relation("TransferTo")
+  players          Player[]
 
   // Prisma'ya veritabanındaki "clubs" tablosunu kullanmasını söyler
   @@map("clubs") 
@@ -116,6 +117,22 @@ model Transfer {
   feeCurrency     String?             // "EUR"
   createdAt       DateTime  @default(now())
   @@map("transfers")
+}
+
+model Player {
+  id          String   @id @default(uuid())
+  tmPlayerId  Int?     @unique
+  name        String
+  photoUrl    String?
+  position    String?
+  shirtNumber String?
+  nationality String?
+  clubId      String
+  club        Club     @relation(fields: [clubId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("players")
 }
 
 model Task {

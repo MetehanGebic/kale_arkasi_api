@@ -1,13 +1,21 @@
 import { prisma } from '../../core/db.js';
 import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from './scrapers/tffScraper.js';
 import { scrapeTransfers } from './scrapers/transfermarktScraper.js';
+import { scrapeSquads } from './scrapers/transfermarktSquadScraper.js';
 
 export const getStandings = async () => {
   return await prisma.standingsEntry.findMany({
     orderBy: { rank: 'asc' },
     include: {
       club: {
-        select: { id: true, name: true, slug: true, logoUrl: true, primaryColor: true }
+        select: { 
+          id: true, 
+          name: true, 
+          slug: true, 
+          logoUrl: true, 
+          primaryColor: true,
+          players: true // Fetch squad
+        }
       }
     }
   });
@@ -59,7 +67,8 @@ export const runScrapers = async () => {
     scrapeStandings(),
     scrapeFixtures(),
     scrapeTopScorers(),
-    scrapeTransfers()
+    scrapeTransfers(),
+    scrapeSquads()
   ]).then(() => console.log('Manuel Sync Tamamlandı.')).catch(e => console.error(e));
   
   return { message: "Senkronizasyon arka planda başlatıldı." };
