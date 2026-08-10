@@ -74,16 +74,35 @@ export async function scrapeSquads() {
       const startseiteUrl = fullUrl.replace('/kader/', '/startseite/');
       
       let coachName = null;
-      try {
-        await delay(1000 + Math.random() * 1000);
-        const startRes = await axios.get(startseiteUrl, { headers });
-        const $s = cheerio.load(startRes.data);
-        const coachLink = $s('a[href*="/profil/trainer/"]');
-        if (coachLink.length > 0) {
-          coachName = coachLink.first().text().trim();
+      let startRetries = 3;
+      while (startRetries > 0) {
+        try {
+          await delay(2000 + Math.random() * 2000);
+          const startRes = await axios.get(startseiteUrl, { headers });
+          const $s = cheerio.load(startRes.data);
+          $s('.flex-container').each((i, el) => {
+            const titleText = $s(el).find('.trainer-position .value').text().trim();
+            if (titleText === 'Teknik Direktör') {
+              coachName = $s(el).find('.name a').text().trim();
+            }
+          });
+          
+          if (!coachName) {
+            // Fallback for older layout
+            const coachLink = $s('a[href*="/profil/trainer/"]');
+            if (coachLink.length > 0) {
+              coachName = coachLink.first().text().trim();
+            }
+          }
+          break;
+        } catch(e) {
+          startRetries--;
+          if (startRetries === 0) {
+            console.log(`[TM Squad Scraper] Teknik direktör bulunamadı: ${club.name}`);
+          } else {
+            await delay(5000);
+          }
         }
-      } catch(e) {
-        console.log(`[TM Squad Scraper] Teknik direktör bulunamadı: ${club.name}`);
       }
 
       console.log(`[TM Squad Scraper] ${club.name} kadrosu çekiliyor... (TD: ${coachName || 'Yok'})`);
