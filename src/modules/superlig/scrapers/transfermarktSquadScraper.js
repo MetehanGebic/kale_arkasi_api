@@ -3,6 +3,28 @@ import * as cheerio from 'cheerio';
 import { prisma } from '../../../core/db.js';
 
 const TM_BASE_URL = 'https://www.transfermarkt.com.tr';
+
+const COACH_MAP_26_27 = {
+  'besiktas-istanbul': 'Vincenzo Italiano',
+  'fenerbahce-istanbul': 'İsmail Kartal',
+  'galatasaray-istanbul': 'Okan Buruk',
+  'trabzonspor': 'Fatih Tekke',
+  'amed-sk': 'Besnik Hasi',
+  'alanyaspor': 'João Pereira',
+  'caykur-rizespor': 'Recep Uçar',
+  'corum-fk': 'Uğur Uçar',
+  'buyuksehir-belediye-erzurumspor': 'Serkan Özbalta',
+  'eyupspor': 'Özhan Pulat',
+  'gaziantep-fk': 'M. Radoi',
+  'genclerbirligi-ankara': 'Metin Diyadin',
+  'goztepe': 'Stanimir Stoilov',
+  'istanbul-basaksehir-fk': 'Nuri Şahin',
+  'kasimpasa': 'Emre Belözoğlu',
+  'kocaelispor': 'Selçuk İnan',
+  'konyaspor': 'İlhan Palut',
+  'samsunspor': 'T. Fink'
+};
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function scrapeSquads() {
@@ -94,6 +116,11 @@ export async function scrapeSquads() {
               coachName = coachLink.first().text().trim();
             }
           }
+          
+          if (!coachName && COACH_MAP_26_27[club.slug]) {
+             coachName = COACH_MAP_26_27[club.slug];
+          }
+
           break;
         } catch(e) {
           startRetries--;
