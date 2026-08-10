@@ -11,10 +11,11 @@ export const getStandings = async () => {
         select: { 
           id: true, 
           name: true, 
-          slug: true, 
-          logoUrl: true, 
+          logoUrl: true,
+          slug: true,
           primaryColor: true,
           coachName: true,
+          totalMarketValue: true,
           players: true // Fetch squad
         }
       }

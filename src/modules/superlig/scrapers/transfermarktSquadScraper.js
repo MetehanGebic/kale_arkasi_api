@@ -127,20 +127,26 @@ export async function scrapeSquads() {
         }
       }
 
-      const $ = cheerio.load(response.data);
-      const rows = $('table.items > tbody > tr');
-      
-      const playersToInsert = [];
+        // Extract Total Market Value from Kader page
+        const $kader = cheerio.load(response.data);
+        const totalValueEl = $kader('a.data-header__market-value-wrapper');
+        let totalMarketValue = null;
+        if (totalValueEl.length > 0) {
+          totalMarketValue = totalValueEl.text().replace('Toplam değer', '').trim();
+        }
+
+        const rows = $kader('table.items > tbody > tr');
+        let playerCount = 0;
+        const playersToInsert = [];
 
       rows.each((i, row) => {
-        const $row = $(row);
+        const $row = $kader(row);
         
-        // Forma No
         const shirtNumberText = $row.find('.rn_nummer').text().trim();
         const shirtNumber = shirtNumberText || null;
 
         // Player ID & Link
-        const nameLink = $row.find('td.hauptlink a');
+        const nameLink = $row.find('td.hauptlink a').first();
         if (nameLink.length === 0) return;
         
         const playerName = nameLink.text().trim();
@@ -184,19 +190,11 @@ export async function scrapeSquads() {
             marketValue,
             clubId: club.id
           });
+          playerCount++;
         }
       });
 
-      // Insert/Update Coach in Club
-      if (coachName) {
-        await prisma.club.update({
-          where: { id: club.id },
-          data: { coachName }
-        });
-      }
-
       // Insert/Update Players in DB
-      let added = 0;
       for (const p of playersToInsert) {
         await prisma.player.upsert({
           where: { tmPlayerId: p.tmPlayerId },
@@ -221,9 +219,17 @@ export async function scrapeSquads() {
             clubId: p.clubId
           }
         });
-        added++;
       }
-      console.log(`[TM Squad Scraper] ${club.name} için ${added} oyuncu kaydedildi.`);
+
+      await prisma.club.update({
+        where: { id: club.id },
+        data: { 
+          coachName: coachName,
+          totalMarketValue: totalMarketValue
+        }
+      });
+
+      console.log(`[TM Squad Scraper] ${club.name} için ${playerCount} oyuncu kaydedildi.`);
     }
 
     console.log('[TM Squad Scraper] İşlem tamamlandı!');
