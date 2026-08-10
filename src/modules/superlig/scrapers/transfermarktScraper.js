@@ -11,8 +11,8 @@ export async function scrapeTransfers() {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     };
 
-    // 5 sayfaya kadar tarama (En son transferler)
-    for (let page = 1; page <= 5; page++) {
+    // 10 sayfaya kadar tarama (En son transferler)
+    for (let page = 1; page <= 10; page++) {
       console.log(`[TM Scraper] Sayfa ${page} taranıyor...`);
       const url = `${TM_BASE_URL}/transfers/neuestetransfers/statistik/plus/ajax/yw1/galerie/0/wettbewerb_id/TR1/plus/0/galerie/0/wettbewerb_id/TR1/verein_land_id//selectedOptionInternalType/nothingSelected/land_id//minMarktwert/0/maxMarktwert/500.000.000/minAbloese/0/maxAbloese/500.000.000/yt0/G%C3%B6ster/page/${page}`;
       const response = await axios.get(url, { headers });
@@ -80,12 +80,23 @@ export async function scrapeTransfers() {
            tmTransferId = parseInt(`${spielerId}${fromTmId || 0}${toTmId || 0}`.substring(0, 15), 10);
         }
 
-        const feeStr = $row.find('td.rechts.hauptlink').text().trim().toLowerCase() || $row.find('td.zelle-abloese').text().trim().toLowerCase();
+        const feeStrOriginal = $row.find('td.rechts.hauptlink').text().trim() || $row.find('td.zelle-abloese').text().trim();
+        const feeStr = feeStrOriginal.toLowerCase();
         
-        let feeType = 'UNDISCLOSED';
-        if (feeStr.includes('bedelsiz')) feeType = 'FREE';
-        else if (feeStr.includes('kiralık') || feeStr.includes('kiralik')) feeType = 'LOAN';
-        else if (feeStr.includes('€') || feeStr.match(/\d/)) feeType = 'FEE';
+        let feeType = 'Açıklanmadı';
+        if (feeStr.includes('bedelsiz')) {
+            feeType = 'Bedelsiz';
+        } else if (feeStr.includes('kiralık') || feeStr.includes('kiralik')) {
+            feeType = 'Kiralık';
+        } else if (feeStr.includes('€') || feeStr.match(/\d/)) {
+            // "1.20 mil. €" -> "1.2M €", "400 bin €" -> "400b €"
+            feeType = feeStrOriginal
+                .replace(/mil\./gi, 'M')
+                .replace(/bin/gi, 'b')
+                .replace(/ €/g, '€');
+        } else if (feeStr.includes('?')) {
+            feeType = 'Açıklanmadı';
+        }
 
         transfers.push({
           tmTransferId,
