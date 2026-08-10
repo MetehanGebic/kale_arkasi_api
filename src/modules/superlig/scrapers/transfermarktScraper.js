@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { prisma } from '../../../core/db.js';
 
 const TM_BASE_URL = 'https://www.transfermarkt.com.tr';
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function scrapeTransfers() {
   console.log('[TM Scraper] Transfermarkt transferleri çekiliyor...');
@@ -16,7 +17,28 @@ export async function scrapeTransfers() {
     for (let page = 1; page <= 10; page++) {
       console.log(`[TM Scraper] Sayfa ${page} taranıyor...`);
       const url = `${TM_BASE_URL}/transfers/neuestetransfers/statistik/plus/ajax/yw1/galerie/0/wettbewerb_id/TR1/plus/0/galerie/0/wettbewerb_id/TR1/verein_land_id//selectedOptionInternalType/nothingSelected/land_id//minMarktwert/0/maxMarktwert/500.000.000/minAbloese/0/maxAbloese/500.000.000/yt0/G%C3%B6ster/page/${page}`;
-      const response = await axios.get(url, { headers });
+      
+      let response;
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          // Rastgele bir gecikme ekleyerek (2-4 sn arası) bot korumasına takılmayı önle
+          await delay(2000 + Math.random() * 2000); 
+          response = await axios.get(url, { headers });
+          break; // Başarılı
+        } catch (err) {
+          retries--;
+          if (err.response && err.response.status === 503) {
+            console.log(`[TM Scraper] 503 hatası alındı (Sayfa ${page}). 5 saniye bekleniyor... Kalan deneme: ${retries}`);
+            await delay(5000);
+            if (retries === 0) throw err;
+          } else {
+            if (retries === 0) throw err;
+            await delay(2000);
+          }
+        }
+      }
+
       const $ = cheerio.load(response.data);
 
       const rows = $('table.items > tbody > tr');
