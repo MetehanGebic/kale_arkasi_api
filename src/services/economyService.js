@@ -35,6 +35,7 @@ export const claimDailyTea = async (userId) => {
     message: 'Afiyet olsun! Günlük çayın eklendi.',
     reward: DAILY_TEA_REWARD,
     newBalance: updatedUser.teaBalance,
+    lastDailyTeaClaimAt: updatedUser.lastDailyTeaClaimAt,
   };
 };
 
@@ -43,7 +44,7 @@ export const claimDailyTea = async (userId) => {
 export const getStatus = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { teaBalance: true },
+    select: { teaBalance: true, lastDailyTeaClaimAt: true },
   });
 
   if (!user) {
@@ -52,7 +53,7 @@ export const getStatus = async (userId) => {
     throw error;
   }
 
-  return { teaBalance: user.teaBalance };
+  return { teaBalance: user.teaBalance, lastDailyTeaClaimAt: user.lastDailyTeaClaimAt };
 };
 
 // En çok çay biriktiren kullanıcıları döner (varsayılan ilk 10).
@@ -105,3 +106,21 @@ export const getLeaderboard = async (limit = 10) => {
     club: user.favoriteClub,
   }));
 };
+export const deductTea = async (userId, amount) => {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { teaBalance: true } });
+  if (!user) {
+    const error = new Error('Kullan�c� bulunamad�.');
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+  if (user.teaBalance < amount) {
+    const error = new Error('Yetersiz bakiye.');
+    error.code = 'INSUFFICIENT_FUNDS';
+    throw error;
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { teaBalance: { decrement: amount } },
+  });
+};
+
