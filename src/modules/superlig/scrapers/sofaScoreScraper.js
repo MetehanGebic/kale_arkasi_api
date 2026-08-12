@@ -136,7 +136,8 @@ async function fetchSofaScoreMatches() {
 
 export {
   fetchSofaScoreMatches,
-  TARGET_TOURNAMENTS
+  TARGET_TOURNAMENTS,
+  fetchSofaScoreMatchDetails
 };
 
 async function fetchSofaScoreMatchDetails(matchId) {
