@@ -39,6 +39,7 @@ export const registerChatHandlers = (io, socket) => {
 
   socket.on('join_match', (matchId) => {
     socket.join(matchId);
+    socket.currentMatchId = matchId;
     console.log(`[Chat] ${user.username} joined match ${matchId}`);
     
     // Rıza Baba greeting
@@ -96,9 +97,27 @@ export const registerChatHandlers = (io, socket) => {
     }
   });
 
+  const checkEmptyRoom = (matchId) => {
+    const room = io.sockets.adapter.rooms.get(matchId);
+    if (!room || room.size === 0) {
+      delete redCards[matchId];
+      delete capoStates[matchId];
+      delete polls[matchId];
+      console.log(`[Chat] Room ${matchId} is empty. Cleaned up memory.`);
+    }
+  };
+
   socket.on('leave_match', (matchId) => {
     socket.leave(matchId);
+    delete socket.currentMatchId;
     console.log(`[Chat] ${user.username} left match ${matchId}`);
+    checkEmptyRoom(matchId);
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.currentMatchId) {
+      checkEmptyRoom(socket.currentMatchId);
+    }
   });
 
   socket.on('send_message', (data) => {

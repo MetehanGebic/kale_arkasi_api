@@ -13,7 +13,8 @@ const TARGET_TOURNAMENTS = {
   LA_LIGA: 8,
   SERIE_A: 23,
   LIGUE_1: 34,
-  LIGA_PORTUGAL: 238
+  LIGA_PORTUGAL: 238,
+  UEFA_SUPER_CUP: 465
 };
 
 const SUPER_LIG_CLUBS = ['galatasaray', 'fenerbahce', 'besiktas', 'trabzonspor', 'basaksehir-fk', 'alanyaspor', 'konyaspor', 'caykur-rizespor','kasimpasa','kocaelispor','yilport-samsunspor','goztepe','genclerbirligi','gaziantep-fk','eyupspor','corum-fk','erzurumspor-fk','amed-sportif-faaliyetler']; 
@@ -93,7 +94,12 @@ async function fetchSofaScoreMatches() {
 
         const isSuperLig = tournamentId === TARGET_TOURNAMENTS.SUPER_LIG;
         const isTurkishTeam = SUPER_LIG_CLUBS.some(c => homeSlug.includes(c) || awaySlug.includes(c));
-        const isEuropean = [TARGET_TOURNAMENTS.CHAMPIONS_LEAGUE, TARGET_TOURNAMENTS.EUROPA_LEAGUE, TARGET_TOURNAMENTS.CONFERENCE_LEAGUE].includes(tournamentId);
+        const isEuropean = [
+          TARGET_TOURNAMENTS.CHAMPIONS_LEAGUE, 
+          TARGET_TOURNAMENTS.EUROPA_LEAGUE, 
+          TARGET_TOURNAMENTS.CONFERENCE_LEAGUE,
+          TARGET_TOURNAMENTS.UEFA_SUPER_CUP
+        ].includes(tournamentId);
 
         const isChatEnabled = isSuperLig || (isEuropean && isTurkishTeam);
 

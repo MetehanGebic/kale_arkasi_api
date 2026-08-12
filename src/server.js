@@ -51,3 +51,17 @@ initCronJobs();
 server.listen(PORT, () => {
   console.log(`Kahvehane kapılarını açtı: http://localhost:${PORT}`);
 });
+
+import { prisma } from './core/db.js';
+
+const gracefulShutdown = async (signal) => {
+  console.log(`\n[${signal}] Kapanma sinyali alındı. Veritabanı bağlantısı kesiliyor...`);
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log('HTTP sunucusu kapatıldı.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

@@ -1,7 +1,7 @@
 import * as economyService from '../services/economyService.js';
 import { getIO } from '../core/socket.js';
 
-export const claimDailyTea = async (req, res) => {
+export const claimDailyTea = async (req, res, next) => {
   try {
     // JWT'den gelen kullanıcı ID'sini alıyoruz
     const userId = req.user.id;
@@ -24,23 +24,21 @@ export const claimDailyTea = async (req, res) => {
       return res.status(400).json({ success: false, message: error.message });
     }
 
-    console.error('[EconomyController claimDailyTea Error]:', error);
-    res.status(500).json({ success: false, message: 'Sunucu tarafında bir hata oluştu.' });
+    next(error);
   }
 };
 // Uygulama içindeki "Kahvehanenin Ağaları" kartını besler.
-export const getLeaderboard = async (req, res) => {
+export const getLeaderboard = async (req, res, next) => {
   try {
     const leaderboard = await economyService.getLeaderboard();
     res.status(200).json({ success: true, data: leaderboard });
   } catch (error) {
-    console.error('[EconomyController getLeaderboard Error]:', error);
-    res.status(500).json({ success: false, message: 'Liderlik tablosu getirilirken bir hata oluştu.' });
+    next(error);
   }
 };
 
 // Flutter tarafında EconomyRepository.getBalance() bu endpoint'i çağırır.
-export const getStatus = async (req, res) => {
+export const getStatus = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -52,7 +50,6 @@ export const getStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: error.message });
     }
 
-    console.error('[EconomyController getStatus Error]:', error);
-    res.status(500).json({ success: false, message: 'Sunucu tarafında bir hata oluştu.' });
+    next(error);
   }
 };

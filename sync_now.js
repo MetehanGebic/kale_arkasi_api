@@ -1,0 +1,1 @@
+import * as superligService from './src/modules/superlig/superlig.service.js'; (async () => { console.log('Senkronize ediliyor...'); await superligService.getLiveMatches(); console.log('Tamamlandi'); process.exit(0); })();

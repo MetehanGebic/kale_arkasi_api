@@ -135,11 +135,11 @@ export async function scrapeTransfers() {
 
     allTransfersToInsert.reverse();
 
-    for (const t of allTransfersToInsert) {
+    const upsertPromises = allTransfersToInsert.map(async (t) => {
       const fromClub = t.fromTmId ? await prisma.club.findUnique({ where: { transfermarktId: t.fromTmId } }) : null;
       const toClub = t.toTmId ? await prisma.club.findUnique({ where: { transfermarktId: t.toTmId } }) : null;
 
-      await prisma.transfer.upsert({
+      return prisma.transfer.upsert({
         where: { tmTransferId: t.tmTransferId },
         update: {
           playerPhotoUrl: t.playerPhotoUrl,
@@ -160,7 +160,8 @@ export async function scrapeTransfers() {
           feeType: t.feeType
         }
       });
-    }
+    });
+    await Promise.all(upsertPromises);
 
     console.log('[TM Scraper] Transfermarkt işlemi tamamlandı.');
   } catch (error) {

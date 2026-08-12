@@ -1,18 +1,17 @@
 import * as tasksService from '../services/tasksService.js';
 import { getIO } from '../core/socket.js';
 
-export const getTasks = async (req, res) => {
+export const getTasks = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const tasks = await tasksService.getTasksForUser(userId);
     res.status(200).json({ success: true, data: tasks });
   } catch (error) {
-    console.error('[TasksController getTasks Error]:', error);
-    res.status(500).json({ success: false, message: 'Görevler getirilirken bir hata oluştu.' });
+    next(error);
   }
 };
 
-export const completeTask = async (req, res) => {
+export const completeTask = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { taskId } = req.params;
@@ -37,7 +36,6 @@ export const completeTask = async (req, res) => {
       return res.status(429).json({ success: false, message: error.message });
     }
 
-    console.error('[TasksController completeTask Error]:', error);
-    res.status(500).json({ success: false, message: 'Sunucu tarafında bir hata oluştu.' });
+    next(error);
   }
 };

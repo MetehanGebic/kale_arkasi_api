@@ -19,47 +19,69 @@ const resetPasswordSchema = z.object({
   password: z.string().min(6, "Şifre en az 6 karakter olmalıdır."),
 });
 class IdentityController {
-  async register(req, res) {
+  async register(req, res, next) {
+    try {
+      const validatedData = registerSchema.parse(req.body);
+      const result = await identityService.registerUser(validatedData);
+      
+      return res.status(201).json({
+        success: true,
+        message: "Kahvehaneye hoş geldin!",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const validatedData = registerSchema.parse(req.body);
+  async login(req, res, next) {
+    try {
+      const validatedData = loginSchema.parse(req.body);
+      const result = await identityService.loginUser(validatedData);
+      return res.status(200).json({
+        success: true,
+        message: "Tekrar hoş geldin!",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const result = await identityService.registerUser(validatedData);
-    
-    return res.status(201).json({
-      success: true,
-      message: "Kahvehaneye hoş geldin!",
-      data: result,
-    });
+  async getClubs(req, res, next) {
+    try {
+      const clubs = await identityService.getActiveClubs();
+      return res.status(200).json({ success: true, data: clubs });
+    } catch (error) {
+      next(error);
+    }
   }
-  async login(req, res) {
-    const validatedData = loginSchema.parse(req.body);
-    const result = await identityService.loginUser(validatedData);
-    return res.status(200).json({
-      success: true,
-      message: "Tekrar hoş geldin!",
-      data: result,
-    });
+
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = forgotPasswordSchema.parse(req.body);
+      const result = await identityService.forgotPassword(email);
+      
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-  async getClubs(req, res) {
-    const clubs = await identityService.getActiveClubs();
-    return res.status(200).json({ success: true, data: clubs });
-  }
-  async forgotPassword(req, res) {
-    const { email } = forgotPasswordSchema.parse(req.body);
-    const result = await identityService.forgotPassword(email);
-    
-    return res.status(200).json({
-      success: true,
-      message: result.message,
-    });
-  }
-  async resetPassword(req, res) {
-    const { email, code, password } = resetPasswordSchema.parse(req.body);
-    const result = await identityService.resetPassword({ email, token: code, newPassword: password });
-    return res.status(200).json({
-      success: true,
-      message: result.message,
-    });
+
+  async resetPassword(req, res, next) {
+    try {
+      const { email, code, password } = resetPasswordSchema.parse(req.body);
+      const result = await identityService.resetPassword({ email, token: code, newPassword: password });
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 }
 export default new IdentityController();

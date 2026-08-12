@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import * as cheerio from 'cheerio';
 import https from 'https';
 import { prisma } from '../../../core/db.js';
@@ -48,10 +48,10 @@ export async function scrapeStandings() {
 
     console.log(`[TFF Scraper] ${standings.length} takÄ±m bulundu, veritabanÄ±na iÅŸleniyor...`);
 
-    for (const entry of standings) {
+    const upsertPromises = standings.map(async (entry) => {
       const club = await prisma.club.findUnique({ where: { tffKulupId: entry.tffKulupId } });
       if (club) {
-        await prisma.standingsEntry.upsert({
+        return prisma.standingsEntry.upsert({
           where: { clubId: club.id },
           update: {
             rank: entry.rank, played: entry.played, won: entry.won, drawn: entry.drawn, lost: entry.lost,
@@ -63,7 +63,8 @@ export async function scrapeStandings() {
           }
         });
       }
-    }
+    });
+    await Promise.all(upsertPromises);
   } catch (error) {
     console.error('[TFF Scraper] Puan durumu hatasÄ±:', error.message);
   }
@@ -135,12 +136,12 @@ export async function scrapeFixtures() {
         fixtures.push({ tffMacId, week, matchDate, homeTffId, awayTffId, homeScore, awayScore });
       });
 
-      for (const fix of fixtures) {
+      const upsertPromises = fixtures.map(async (fix) => {
         const homeClub = await prisma.club.findUnique({ where: { tffKulupId: fix.homeTffId } });
         const awayClub = await prisma.club.findUnique({ where: { tffKulupId: fix.awayTffId } });
 
         if (homeClub && awayClub) {
-          await prisma.fixture.upsert({
+          return prisma.fixture.upsert({
             where: { tffMacId: fix.tffMacId },
             update: {
               matchDate: fix.matchDate,
@@ -158,7 +159,8 @@ export async function scrapeFixtures() {
             }
           });
         }
-      }
+      });
+      await Promise.all(upsertPromises);
     }
     console.log('[TFF Scraper] FikstÃ¼r tamamlandÄ±.');
   } catch (error) {
@@ -193,13 +195,14 @@ export async function scrapeTopScorers() {
       }
     });
 
-    for (const scorer of topScorers) {
-      await prisma.topScorer.upsert({
+    const upsertPromises = topScorers.map(scorer => {
+      return prisma.topScorer.upsert({
         where: { tffKisiId: scorer.tffKisiId },
         update: { rank: scorer.rank, clubName: scorer.clubName, goals: scorer.goals },
         create: { rank: scorer.rank, tffKisiId: scorer.tffKisiId, playerName: scorer.playerName, clubName: scorer.clubName, goals: scorer.goals }
       });
-    }
+    });
+    await Promise.all(upsertPromises);
     console.log('[TFF Scraper] Gol krallÄ±ÄŸÄ± tamamlandÄ±.');
   } catch (error) {
     console.error('[TFF Scraper] Gol KrallÄ±ÄŸÄ± hatasÄ±:', error.message);
