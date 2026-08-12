@@ -43,6 +43,18 @@ export const completeTask = async (userId, taskId) => {
     throw new Error('TASK_NOT_FOUND');
   }
 
+  // Güvenlik Önlemi: Ardışık görev tamamlama sömürüsünü önlemek için 30 sn cooldown (Rate Limiting)
+  const lastTask = await prisma.userTask.findFirst({
+    where: { userId },
+    orderBy: { completedAt: 'desc' },
+  });
+  if (lastTask) {
+    const timeSinceLastTask = (Date.now() - lastTask.completedAt.getTime()) / 1000;
+    if (timeSinceLastTask < 30) {
+      throw new Error('Lütfen yeni bir görev tamamlamadan önce biraz bekleyin.');
+    }
+  }
+
   const alreadyDone = await prisma.userTask.findUnique({
     where: {
       userId_taskId_dateKey: { userId, taskId, dateKey },

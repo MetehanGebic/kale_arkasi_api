@@ -7,7 +7,7 @@ let io;
 export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: '*', // Herkese açık, güvenlik gerekirse kısıtlanabilir
+      origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
       methods: ['GET', 'POST'],
     },
   });
@@ -19,7 +19,10 @@ export const initSocket = (httpServer) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gizli_anahtar');
+      if (!process.env.JWT_SECRET) {
+        return next(new Error('JWT_SECRET is not configured'));
+      }
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.user = decoded; // { id, email, username }
       next();
     } catch (err) {

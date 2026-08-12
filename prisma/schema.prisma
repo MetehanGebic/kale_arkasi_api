@@ -117,8 +117,6 @@ model Transfer {
   toClubId        String?
   toClub          Club?     @relation("TransferTo", fields: [toClubId], references: [id])
   feeType         String    // FEE | LOAN | FREE | UNDISCLOSED
-  feeAmount       Float?              // sadece feeType=FEE ve tutar belliyse dolu
-  feeCurrency     String?             // "EUR"
   createdAt       DateTime  @default(now())
   @@map("transfers")
 }

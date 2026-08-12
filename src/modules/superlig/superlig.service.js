@@ -15,8 +15,7 @@ export const getStandings = async () => {
           slug: true,
           primaryColor: true,
           coachName: true,
-          totalMarketValue: true,
-          players: true // Fetch squad
+          totalMarketValue: true
         }
       }
     }

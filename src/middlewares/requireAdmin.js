@@ -1,19 +1,19 @@
-import { prisma } from '../core/db.js';
+ï»¿import { prisma } from '../core/db.js';
 
 export const requireAdmin = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Yetkisiz erişim.' });
+      return res.status(401).json({ success: false, message: 'Yetkisiz eriÅŸim.' });
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Bu işlem için yetkiniz yok.' });
+      return res.status(403).json({ success: false, message: 'Bu iÅŸlem iÃ§in yetkiniz yok.' });
     }
 
     next();
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Yetki kontrolü sırasında hata oluştu.' });
+    res.status(500).json({ success: false, message: 'Yetki kontrolÃ¼ sÄ±rasÄ±nda hata oluÅŸtu.' });
   }
 };

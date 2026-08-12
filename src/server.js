@@ -15,7 +15,10 @@ import { initCronJobs } from './core/cron.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Statik dosyaları sun (Avatarlar için)

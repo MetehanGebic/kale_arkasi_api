@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { prisma } from '../core/db.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
 
@@ -16,7 +17,20 @@ const storage = multer.diskStorage({
   }
 })
 
-const upload = multer({ storage: storage })
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Sadece JPEG, PNG ve WEBP formatlarÄ± desteklenir.'));
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter 
+});
 
 router.get('/me', verifyToken, async (req, res) => {
   try {
@@ -26,15 +40,31 @@ router.get('/me', verifyToken, async (req, res) => {
     });
     res.status(200).json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Kullanıcı bilgileri alınamadı.' });
+    res.status(500).json({ success: false, message: 'KullanÄ±cÄ± bilgileri alÄ±namadÄ±.' });
   }
 });
 
-router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
+router.post('/avatar', verifyToken, (req, res, next) => {
+  upload.single('avatar')(req, res, function (err) {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Dosya yüklenemedi.' });
+      return res.status(400).json({ success: false, message: 'Dosya yÃ¼klenemedi.' });
     }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (user?.avatarUrl) {
+      const oldAvatarPath = path.join(process.cwd(), 'public', user.avatarUrl);
+      if (fs.existsSync(oldAvatarPath)) {
+        fs.unlinkSync(oldAvatarPath);
+      }
+    }
+
     const avatarUrl = '/avatars/' + req.file.filename;
     await prisma.user.update({
       where: { id: req.user.id },
@@ -42,7 +72,7 @@ router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) =>
     });
     res.status(200).json({ success: true, avatarUrl });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Avatar güncellenirken hata oluştu.' });
+    res.status(500).json({ success: false, message: 'Avatar gÃ¼ncellenirken hata oluÅŸtu.' });
   }
 });
 

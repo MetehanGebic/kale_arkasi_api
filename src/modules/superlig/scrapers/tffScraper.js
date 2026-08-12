@@ -1,23 +1,23 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import * as cheerio from 'cheerio';
 import https from 'https';
 import { prisma } from '../../../core/db.js';
 
 const TFF_BASE_URL = 'https://www.tff.org/default.aspx';
 
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
 const headers = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
 export async function scrapeStandings() {
-  console.log('[TFF Scraper] Puan durumu çekiliyor...');
+  console.log('[TFF Scraper] Puan durumu Ã§ekiliyor...');
   try {
-    const response = await axios.get(`${TFF_BASE_URL}?pageID=198`, { headers, httpsAgent });
+    const response = await axios.get(`${TFF_BASE_URL}?pageID=198`, { headers });
     const $ = cheerio.load(response.data);
     const standings = [];
 
-    // TFF'nin garip id'lerinden ve satır sonu boşluklarından kaçınmak için * kullanıyoruz
+    // TFF'nin garip id'lerinden ve satÄ±r sonu boÅŸluklarÄ±ndan kaÃ§Ä±nmak iÃ§in * kullanÄ±yoruz
     const rows = $('span[id*="_lblOyun"]').closest('tr');
 
     rows.each((i, row) => {
@@ -46,7 +46,7 @@ export async function scrapeStandings() {
       }
     });
 
-    console.log(`[TFF Scraper] ${standings.length} takım bulundu, veritabanına işleniyor...`);
+    console.log(`[TFF Scraper] ${standings.length} takÄ±m bulundu, veritabanÄ±na iÅŸleniyor...`);
 
     for (const entry of standings) {
       const club = await prisma.club.findUnique({ where: { tffKulupId: entry.tffKulupId } });
@@ -65,16 +65,16 @@ export async function scrapeStandings() {
       }
     }
   } catch (error) {
-    console.error('[TFF Scraper] Puan durumu hatası:', error.message);
+    console.error('[TFF Scraper] Puan durumu hatasÄ±:', error.message);
   }
 }
 
 export async function scrapeFixtures() {
-  console.log('[TFF Scraper] Fikstür çekiliyor...');
+  console.log('[TFF Scraper] FikstÃ¼r Ã§ekiliyor...');
   try {
     for (let week = 1; week <= 34; week++) {
       const url = `${TFF_BASE_URL}?pageID=198&hafta=${week}`;
-      const response = await axios.get(url, { headers, httpsAgent });
+      const response = await axios.get(url, { headers });
       const $ = cheerio.load(response.data);
 
       const fixtures = [];
@@ -99,8 +99,8 @@ export async function scrapeFixtures() {
           const matchIdMatch = scoreLink.match(/macId=(\d+)/i);
           if (matchIdMatch) tffMacId = parseInt(matchIdMatch[1], 10);
         }
-        // Eğer maç henüz oynanmadıysa skor linki olmayabilir veya macId 0 kalabilir
-        // TFF genelde her maçın bir detay sayfasına link verir, oradan macId alabiliriz.
+        // EÄŸer maÃ§ henÃ¼z oynanmadÄ±ysa skor linki olmayabilir veya macId 0 kalabilir
+        // TFF genelde her maÃ§Ä±n bir detay sayfasÄ±na link verir, oradan macId alabiliriz.
         if (tffMacId === 0) {
            const detayLink = $(row).find('.haftaninMaclariDetay a').attr('href');
            if (detayLink) {
@@ -109,7 +109,7 @@ export async function scrapeFixtures() {
            }
         }
         
-        if (tffMacId === 0) return; // Mac ID bulunamadıysa geç
+        if (tffMacId === 0) return; // Mac ID bulunamadÄ±ysa geÃ§
 
         const homeLink = $(row).find('.haftaninMaclariEv a').attr('href');
         const awayLink = $(row).find('.haftaninMaclariDeplasman a').attr('href');
@@ -160,16 +160,16 @@ export async function scrapeFixtures() {
         }
       }
     }
-    console.log('[TFF Scraper] Fikstür tamamlandı.');
+    console.log('[TFF Scraper] FikstÃ¼r tamamlandÄ±.');
   } catch (error) {
-    console.error('[TFF Scraper] Fikstür hatası:', error.message);
+    console.error('[TFF Scraper] FikstÃ¼r hatasÄ±:', error.message);
   }
 }
 
 export async function scrapeTopScorers() {
-  console.log('[TFF Scraper] Gol Krallığı çekiliyor...');
+  console.log('[TFF Scraper] Gol KrallÄ±ÄŸÄ± Ã§ekiliyor...');
   try {
-    const response = await axios.get(`${TFF_BASE_URL}?pageID=821`, { headers, httpsAgent });
+    const response = await axios.get(`${TFF_BASE_URL}?pageID=821`, { headers });
     const $ = cheerio.load(response.data);
 
     const rows = $('span[id*="_lblAdi"]').closest('tr');
@@ -200,8 +200,8 @@ export async function scrapeTopScorers() {
         create: { rank: scorer.rank, tffKisiId: scorer.tffKisiId, playerName: scorer.playerName, clubName: scorer.clubName, goals: scorer.goals }
       });
     }
-    console.log('[TFF Scraper] Gol krallığı tamamlandı.');
+    console.log('[TFF Scraper] Gol krallÄ±ÄŸÄ± tamamlandÄ±.');
   } catch (error) {
-    console.error('[TFF Scraper] Gol Krallığı hatası:', error.message);
+    console.error('[TFF Scraper] Gol KrallÄ±ÄŸÄ± hatasÄ±:', error.message);
   }
 }

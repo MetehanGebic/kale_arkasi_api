@@ -33,6 +33,9 @@ export const completeTask = async (req, res) => {
     if (error.message === 'TASK_ALREADY_COMPLETED') {
       return res.status(409).json({ success: false, message: 'Bu görevi bugün zaten tamamladın.' });
     }
+    if (error.message.includes('bekleyin')) {
+      return res.status(429).json({ success: false, message: error.message });
+    }
 
     console.error('[TasksController completeTask Error]:', error);
     res.status(500).json({ success: false, message: 'Sunucu tarafında bir hata oluştu.' });

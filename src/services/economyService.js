@@ -6,7 +6,7 @@ export const claimDailyTea = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
   if (!user) {
-    const error = new Error('Kullanıcı bulunamadı.');
+    const error = new Error('KullanÄ±cÄ± bulunamadÄ±.');
     error.code = 'USER_NOT_FOUND';
     throw error;
   }
@@ -17,7 +17,7 @@ export const claimDailyTea = async (userId) => {
     const diffInHours = Math.abs(now - user.lastDailyTeaClaimAt) / 36e5;
     if (diffInHours < 24) {
       const remainingHours = (24 - diffInHours).toFixed(1);
-      const error = new Error(`Çay ocağı henüz demlenmedi! ${remainingHours} saat sonra tekrar gel.`);
+      const error = new Error(`Ã‡ay ocaÄŸÄ± henÃ¼z demlenmedi! ${remainingHours} saat sonra tekrar gel.`);
       error.code = 'TEA_NOT_READY';
       throw error;
     }
@@ -32,15 +32,15 @@ export const claimDailyTea = async (userId) => {
   });
 
   return {
-    message: 'Afiyet olsun! Günlük çayın eklendi.',
+    message: 'Afiyet olsun! GÃ¼nlÃ¼k Ã§ayÄ±n eklendi.',
     reward: DAILY_TEA_REWARD,
     newBalance: updatedUser.teaBalance,
     lastDailyTeaClaimAt: updatedUser.lastDailyTeaClaimAt,
   };
 };
 
-// Flutter tarafındaki HomeScreen açılışında (fetchBalance) çağrılıyor.
-// Bakiyeyi DEĞİŞTİRMEZ, sadece mevcut değeri okur.
+// Flutter tarafÄ±ndaki HomeScreen aÃ§Ä±lÄ±ÅŸÄ±nda (fetchBalance) Ã§aÄŸrÄ±lÄ±yor.
+// Bakiyeyi DEÄÄ°ÅTÄ°RMEZ, sadece mevcut deÄŸeri okur.
 export const getStatus = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -48,7 +48,7 @@ export const getStatus = async (userId) => {
   });
 
   if (!user) {
-    const error = new Error('Kullanıcı bulunamadı.');
+    const error = new Error('KullanÄ±cÄ± bulunamadÄ±.');
     error.code = 'USER_NOT_FOUND';
     throw error;
   }
@@ -56,15 +56,15 @@ export const getStatus = async (userId) => {
   return { teaBalance: user.teaBalance, lastDailyTeaClaimAt: user.lastDailyTeaClaimAt };
 };
 
-// En çok çay biriktiren kullanıcıları döner (varsayılan ilk 10).
+// En Ã§ok Ã§ay biriktiren kullanÄ±cÄ±larÄ± dÃ¶ner (varsayÄ±lan ilk 10).
 // Herhangi bir yan etkisi yoktur, sadece okur.
 //
-// UYGULAMANIN BAŞLARINDA 10-20 ÇAYLI KULLANICILARIN LİSTEDE GÖRÜNMESİNİ
-// İSTEMİYORSAN: aşağıdaki DEFAULT_MIN_LEADERBOARD_BALANCE değerini
-// değiştirebilir, ya da kod dokunmadan .env dosyana
+// UYGULAMANIN BAÅLARINDA 10-20 Ã‡AYLI KULLANICILARIN LÄ°STEDE GÃ–RÃœNMESÄ°NÄ°
+// Ä°STEMÄ°YORSAN: aÅŸaÄŸÄ±daki DEFAULT_MIN_LEADERBOARD_BALANCE deÄŸerini
+// deÄŸiÅŸtirebilir, ya da kod dokunmadan .env dosyana
 //   LEADERBOARD_MIN_BALANCE=100
-// satırını ekleyip sunucuyu yeniden başlatabilirsin (.env varsa kod
-// değişikliği gerekmez).
+// satÄ±rÄ±nÄ± ekleyip sunucuyu yeniden baÅŸlatabilirsin (.env varsa kod
+// deÄŸiÅŸikliÄŸi gerekmez).
 const DEFAULT_MIN_LEADERBOARD_BALANCE = 50;
 
 function getMinLeaderboardBalance() {
@@ -107,20 +107,24 @@ export const getLeaderboard = async (limit = 10) => {
   }));
 };
 export const deductTea = async (userId, amount) => {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { teaBalance: true } });
-  if (!user) {
-    const error = new Error('Kullan�c� bulunamad�.');
-    error.code = 'USER_NOT_FOUND';
-    throw error;
-  }
-  if (user.teaBalance < amount) {
+  const result = await prisma.user.updateMany({
+    where: { 
+      id: userId,
+      teaBalance: { gte: amount }
+    },
+    data: { teaBalance: { decrement: amount } },
+  });
+  
+  if (result.count === 0) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      const error = new Error('Kullanıcı bulunamadı.');
+      error.code = 'USER_NOT_FOUND';
+      throw error;
+    }
     const error = new Error('Yetersiz bakiye.');
     error.code = 'INSUFFICIENT_FUNDS';
     throw error;
   }
-  await prisma.user.update({
-    where: { id: userId },
-    data: { teaBalance: { decrement: amount } },
-  });
 };
 
