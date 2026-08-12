@@ -136,7 +136,6 @@ async function fetchSofaScoreMatches() {
 
 export {
   fetchSofaScoreMatches,
-  fetchSofaScoreMatchDetails,
   TARGET_TOURNAMENTS
 };
 
@@ -155,7 +154,7 @@ async function fetchSofaScoreMatchDetails(matchId) {
     // 1. Lineups
     let lineups = null;
     try {
-      await page.goto(\https://api.sofascore.com/api/v1/event/\/lineups\, { waitUntil: 'networkidle2' });
+      await page.goto(`https://api.sofascore.com/api/v1/event/${matchId}/lineups`, { waitUntil: 'networkidle2' });
       const text = await page.evaluate(() => document.body.innerText);
       lineups = JSON.parse(text);
     } catch (e) {}
@@ -163,7 +162,7 @@ async function fetchSofaScoreMatchDetails(matchId) {
     // 2. Statistics
     let statistics = null;
     try {
-      await page.goto(\https://api.sofascore.com/api/v1/event/\/statistics\, { waitUntil: 'networkidle2' });
+      await page.goto(`https://api.sofascore.com/api/v1/event/${matchId}/statistics`, { waitUntil: 'networkidle2' });
       const text = await page.evaluate(() => document.body.innerText);
       statistics = JSON.parse(text);
     } catch (e) {}
@@ -171,7 +170,7 @@ async function fetchSofaScoreMatchDetails(matchId) {
     // 3. Incidents (Optional for goals/cards summary)
     let incidents = null;
     try {
-      await page.goto(\https://api.sofascore.com/api/v1/event/\/incidents\, { waitUntil: 'networkidle2' });
+      await page.goto(`https://api.sofascore.com/api/v1/event/${matchId}/incidents`, { waitUntil: 'networkidle2' });
       const text = await page.evaluate(() => document.body.innerText);
       incidents = JSON.parse(text);
     } catch (e) {}
