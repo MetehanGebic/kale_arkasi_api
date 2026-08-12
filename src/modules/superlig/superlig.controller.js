@@ -46,3 +46,12 @@ export const syncData = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getLiveMatches = async (req, res, next) => {
+  try {
+    const data = await superligService.getLiveMatches();
+    res.status(200).json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+};

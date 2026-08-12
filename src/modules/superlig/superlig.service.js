@@ -2,6 +2,7 @@ import { prisma } from '../../core/db.js';
 import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from './scrapers/tffScraper.js';
 import { scrapeTransfers } from './scrapers/transfermarktScraper.js';
 import { scrapeSquads } from './scrapers/transfermarktSquadScraper.js';
+import { fetchSofaScoreMatches } from './scrapers/sofaScoreScraper.js';
 
 export const getStandings = async () => {
   return await prisma.standingsEntry.findMany({
@@ -73,4 +74,10 @@ export const runScrapers = async () => {
   ]).then(() => console.log('Manuel Sync Tamamlandı.')).catch(e => console.error(e));
   
   return { message: "Senkronizasyon arka planda başlatıldı." };
+};
+
+
+export const getLiveMatches = async () => {
+  // We could cache this in redis in production, but for now we fetch it directly
+  return await fetchSofaScoreMatches();
 };

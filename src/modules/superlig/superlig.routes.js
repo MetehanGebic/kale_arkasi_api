@@ -14,3 +14,5 @@ router.get('/transfers', superligController.getTransfers);
 router.post('/sync', verifyToken, requireAdmin, superligController.syncData);
 
 export default router;
+
+router.get('/live-matches', superligController.getLiveMatches);
