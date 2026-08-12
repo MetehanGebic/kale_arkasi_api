@@ -78,3 +78,14 @@ export const addMatchComment = async (req, res, next) => {
   }
 };
 
+
+export const getMatchDetails = async (req, res, next) => {
+  try {
+    const matchId = req.params.matchId;
+    const data = await superligService.getMatchDetails(matchId);
+    res.status(200).json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -12,6 +12,7 @@ router.get('/transfers', superligController.getTransfers);
 
 // Live Matches
 router.get('/live-matches', superligController.getLiveMatches);
+router.get('/live-matches/:matchId/details', superligController.getMatchDetails);
 
 // Match Comments (Forum)
 router.get('/live-matches/:matchId/comments', superligController.getMatchComments);

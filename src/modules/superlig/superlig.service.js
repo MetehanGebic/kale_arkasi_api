@@ -2,7 +2,7 @@ import { prisma } from '../../core/db.js';
 import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from './scrapers/tffScraper.js';
 import { scrapeTransfers } from './scrapers/transfermarktScraper.js';
 import { scrapeSquads } from './scrapers/transfermarktSquadScraper.js';
-import { fetchSofaScoreMatches } from './scrapers/sofaScoreScraper.js';
+import { fetchSofaScoreMatches, fetchSofaScoreMatchDetails } from './scrapers/sofaScoreScraper.js';
 
 export const getStandings = async () => {
   return await prisma.standingsEntry.findMany({
@@ -103,5 +103,11 @@ export const addMatchComment = async (matchId, userId, content) => {
       user: { select: { id: true, username: true, avatarUrl: true, favoriteClubId: true } }
     }
   });
+};
+
+
+export const getMatchDetails = async (matchId) => {
+  // Note: We need to import fetchSofaScoreMatchDetails at the top of this file
+  return await fetchSofaScoreMatchDetails(matchId);
 };
 
