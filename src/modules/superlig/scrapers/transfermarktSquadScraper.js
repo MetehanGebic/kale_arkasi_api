@@ -6,29 +6,29 @@ const TM_BASE_URL = 'https://www.transfermarkt.com.tr';
 
 const COACH_MAP_26_27 = {
   'besiktas-istanbul': 'Vincenzo Italiano',
-  'fenerbahce-istanbul': 'Ä°smail Kartal',
+  'fenerbahce-istanbul': 'İsmail Kartal',
   'galatasaray-istanbul': 'Okan Buruk',
   'trabzonspor': 'Fatih Tekke',
   'amed-sk': 'Besnik Hasi',
-  'alanyaspor': 'JoÃ£o Pereira',
-  'caykur-rizespor': 'Recep UÃ§ar',
-  'corum-fk': 'UÄŸur UÃ§ar',
-  'buyuksehir-belediye-erzurumspor': 'Serkan Ã–zbalta',
-  'eyupspor': 'Ã–zhan Pulat',
-  'gaziantep-fk': 'M. Radoi',
+  'alanyaspor': 'João Pereira',
+  'caykur-rizespor': 'Recep Uçar',
+  'corum-fk': 'Uğur Uçar',
+  'buyuksehir-belediye-erzurumspor': 'Serkan Özbalta',
+  'eyupspor': 'Özhan Pulat',
+  'gaziantep-fk': 'Mihel Radoi',
   'genclerbirligi-ankara': 'Metin Diyadin',
   'goztepe': 'Stanimir Stoilov',
-  'istanbul-basaksehir-fk': 'Nuri Åahin',
-  'kasimpasa': 'Emre BelÃ¶zoÄŸlu',
-  'kocaelispor': 'SelÃ§uk Ä°nan',
-  'konyaspor': 'Ä°lhan Palut',
-  'samsunspor': 'T. Fink'
+  'istanbul-basaksehir-fk': 'Nuri Şahin',
+  'kasimpasa': 'Emre Belözoğlu',
+  'kocaelispor': 'Selçuk İnan',
+  'konyaspor': 'İlhan Palut',
+  'samsunspor': 'Thorsten Fink'
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function scrapeSquads() {
-  console.log('[TM Squad Scraper] TakÄ±m kadrolarÄ± Ã§ekiliyor...');
+  console.log('[TM Squad Scraper] Takım kadroları Çekiliyor...');
   try {
     const headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -37,42 +37,35 @@ export async function scrapeSquads() {
     // 1. Get all active clubs from our DB
     const clubs = await prisma.club.findMany({ where: { isActive: true } });
     if (clubs.length === 0) {
-      console.log('[TM Squad Scraper] VeritabanÄ±nda aktif kulÃ¼p bulunamadÄ±.');
+      console.log('[TM Squad Scraper] Veritabanındaki herhangi bir aktif kulüp bulunamadı.');
       return;
     }
 
-    console.log(`[TM Squad Scraper] ${clubs.length} aktif kulÃ¼p bulundu, linkler eÅŸleÅŸtiriliyor...`);
+    console.log(`[TM Squad Scraper] ${clubs.length} aktif kulüp bulundu, linkler eşleştiriliyor...`);
 
-    // 2. Fetch Super Lig homepage to map slugs to TM squad URLs
     const superLigUrl = `${TM_BASE_URL}/super-lig/startseite/wettbewerb/TR1`;
     const superLigRes = await axios.get(superLigUrl, { headers });
     const $main = cheerio.load(superLigRes.data);
 
-    // Map: tmSlug -> TM squad url
     const tmClubUrls = {};
     $main('#yw1 table.items > tbody > tr').each((i, el) => {
       const a = $main(el).find('td.hauptlink.no-border-links a');
       if (a.length > 0) {
-        const href = a.attr('href'); // /galatasaray/spielplan/verein/141/saison_id/2024
-        // Extract club slug from href. Example href: /galatasaray/spielplan/verein/141/saison_id/2024
+        const href = a.attr('href');
         const parts = href.split('/');
         if (parts.length > 1) {
-          const slug = parts[1]; // galatasaray
-          // Change /spielplan/ to /kader/ to get squad page
+          const slug = parts[1];
           const squadHref = href.replace('/spielplan/', '/kader/');
           tmClubUrls[slug] = squadHref;
         }
       }
     });
 
-    console.log('[TM Squad Scraper] Transfermarkt Ã¼zerinde bulunan takÄ±mlar:', Object.keys(tmClubUrls).join(', '));
+    console.log('[TM Squad Scraper] Transfermarkt Üzerinde bulunan takımlar:', Object.keys(tmClubUrls).join(', '));
 
-    // 3. For each club in our DB, find its URL and scrape players
     for (const club of clubs) {
-      // Find a matching url based on slug
       let squadUrlPath = tmClubUrls[club.slug];
       
-      // Fallback: Fuzzy match
       if (!squadUrlPath) {
         const tmSlugs = Object.keys(tmClubUrls);
         const match = tmSlugs.find(s => 
@@ -83,12 +76,12 @@ export async function scrapeSquads() {
         );
         if (match) {
           squadUrlPath = tmClubUrls[match];
-          console.log(`[TM Squad Scraper] EÅŸleÅŸme bulundu: ${club.slug} -> ${match}`);
+          console.log(`[TM Squad Scraper] Eşleşme bulundu: ${club.slug} -> ${match}`);
         }
       }
 
       if (!squadUrlPath) {
-        console.log(`[TM Squad Scraper] UyarÄ±: ${club.name} iÃ§in Transfermarkt linki bulunamadÄ±. (Slug: ${club.slug})`);
+        console.log(`[TM Squad Scraper] Uyarı: ${club.name} için Transfermarkt linki bulunamadı. (Slug: ${club.slug})`);
         continue;
       }
 
@@ -104,13 +97,12 @@ export async function scrapeSquads() {
           const $s = cheerio.load(startRes.data);
           $s('.flex-container').each((i, el) => {
             const titleText = $s(el).find('.trainer-position .value').text().trim();
-            if (titleText === 'Teknik DirektÃ¶r') {
+            if (titleText === 'Teknik Direktör') {
               coachName = $s(el).find('.name a').text().trim();
             }
           });
           
           if (!coachName) {
-            // Fallback for older layout
             const coachLink = $s('a[href*="/profil/trainer/"]');
             if (coachLink.length > 0) {
               coachName = coachLink.first().text().trim();
@@ -125,14 +117,14 @@ export async function scrapeSquads() {
         } catch(e) {
           startRetries--;
           if (startRetries === 0) {
-            console.log(`[TM Squad Scraper] Teknik direktÃ¶r bulunamadÄ±: ${club.name}`);
+            console.log(`[TM Squad Scraper] Teknik direktör bulunamadı: ${club.name}`);
           } else {
             await delay(5000);
           }
         }
       }
 
-      console.log(`[TM Squad Scraper] ${club.name} kadrosu Ã§ekiliyor... (TD: ${coachName || 'Yok'})`);
+      console.log(`[TM Squad Scraper] ${club.name} kadrosu çekiliyor... (TD: ${coachName || 'Yok'})`);
 
       let response;
       let retries = 3;
@@ -144,7 +136,7 @@ export async function scrapeSquads() {
         } catch (err) {
           retries--;
           if (err.response && err.response.status === 503) {
-            console.log(`[TM Squad Scraper] 503 hatasÄ± (${club.name}). 5 saniye bekleniyor... Kalan deneme: ${retries}`);
+            console.log(`[TM Squad Scraper] 503 hatası alındı(${club.name}). 5 saniye bekleniyor... Kalan deneme: ${retries}`);
             await delay(5000);
             if (retries === 0) throw err;
           } else {
@@ -154,7 +146,6 @@ export async function scrapeSquads() {
         }
       }
 
-        // Extract Total Market Value from Kader page
         const $kader = cheerio.load(response.data);
         const totalValueEl = $kader('a.data-header__market-value-wrapper');
         let totalMarketValue = null;
@@ -172,7 +163,6 @@ export async function scrapeSquads() {
         const shirtNumberText = $row.find('.rn_nummer').text().trim();
         const shirtNumber = shirtNumberText || null;
 
-        // Player ID & Link
         const nameLink = $row.find('td.hauptlink a').first();
         if (nameLink.length === 0) return;
         
@@ -184,7 +174,6 @@ export async function scrapeSquads() {
            if (idMatch) tmPlayerId = parseInt(idMatch[1], 10);
           }
 
-        // Photo URL
         const img = $row.find('img.bilderrahmen-fixed, img.bilderrahmen-layout');
         let photoUrl = img.attr('data-src') || img.attr('src') || null;
         if (photoUrl && photoUrl.includes('default.jpg')) {
@@ -194,15 +183,12 @@ export async function scrapeSquads() {
            photoUrl = photoUrl.replace('/small/', '/medium/'); // Better resolution
         }
 
-        // Position
         const posText = $row.find('table.inline-table tr:nth-child(2) td').text().trim();
         const position = posText || null;
 
-        // Nationality
         const natImg = $row.find('td.zentriert img.flaggenrahmen').first();
         const nationality = natImg.attr('title') || null;
 
-        // Market Value
         const valText = $row.find('td.rechts.hauptlink a').text().trim();
         const marketValue = valText || null;
 
@@ -221,7 +207,6 @@ export async function scrapeSquads() {
         }
       });
 
-      // Insert/Update Players in DB
       for (const p of playersToInsert) {
         await prisma.player.upsert({
           where: { tmPlayerId: p.tmPlayerId },
@@ -248,7 +233,6 @@ export async function scrapeSquads() {
         });
       }
 
-      // Eski oyuncuları sil (Issue 11)
       const scrapedPlayerIds = playersToInsert.map(p => p.tmPlayerId);
       await prisma.player.deleteMany({
         where: {
@@ -265,10 +249,10 @@ export async function scrapeSquads() {
         }
       });
 
-      console.log(`[TM Squad Scraper] ${club.name} iÃ§in ${playerCount} oyuncu kaydedildi.`);
+      console.log(`[TM Squad Scraper] ${club.name} için ${playerCount} oyuncu kaydedildi.`);
     }
 
-    console.log('[TM Squad Scraper] Ä°ÅŸlem tamamlandÄ±!');
+    console.log('[TM Squad Scraper] İşlem tamamlandı!');
   } catch (error) {
     console.error('[TM Squad Scraper] Hata:', error.message);
   }

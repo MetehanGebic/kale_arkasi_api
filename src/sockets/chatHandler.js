@@ -11,9 +11,9 @@ const capoStates = {};
 const polls = {};
 
 const STORE_PRICES = {
-  cay: 50,
+  cay: 250,
   capo: 400,
-  red_card: 100,
+  red_card: 1000,
   madde: 50,
   mesale: 200,
   cekirdek: 30,
@@ -46,7 +46,7 @@ export const registerChatHandlers = (io, socket) => {
       io.to(matchId).emit('chat_message', {
         id: Date.now().toString(),
         sender: 'Kahveci Rıza',
-        text: `Hoşgeldin ${user.username}! Çaylar şirketten değil ha, pamuk eller cebe!`,
+        text: `Hoşgeldin ${user.username}! Çaylar şirketten değil , pamuk eller cebe!`,
         isSystem: true,
         timestamp: new Date().toISOString()
       });
@@ -172,11 +172,11 @@ export const registerChatHandlers = (io, socket) => {
            socket.emit('socket_error', { message: 'Bu kullanıcı zaten kırmızı kartlı!' });
            return;
         }
-        redCards[matchId][target] = Date.now() + 30000; // 30 seconds
-        text = `${target} 30 saniye susturuldu!`;
+        redCards[matchId][target] = Date.now() + 60000; // 60 seconds
+        text = `${target} 1 dakika susturuldu!`;
       } else if (type === 'capo') {
         if (!capoStates[matchId]) capoStates[matchId] = {};
-        capoStates[matchId][user.username] = (capoStates[matchId][user.username] || 0) + 3; // 3 messages
+        capoStates[matchId][user.username] = (capoStates[matchId][user.username] || 0) + 4;
         text = `${user.username} Amigo modunu aktifleştirdi!`;
         // We emit to the user only because Capo state shouldn't flood the chat
         socket.emit('addon_event', {

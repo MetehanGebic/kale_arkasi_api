@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 let transporter = null;
 const initTransporter = async () => {
   if (transporter) return transporter;
-  // Eğer gerçek bir SMTP yapılandırılmamışsa veya Ethereal varsayılan bilgileriyse test hesabı aç
+  
   if (!process.env.SMTP_USER || process.env.SMTP_USER === 'ethereal.user') {
     const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
@@ -28,8 +28,7 @@ const initTransporter = async () => {
   return transporter;
 };
 /**
- * E-posta göndermek için genel yardımcı fonksiyon
- * @param {Object} options - { to, subject, text, html }
+ * @param {Object} options
  */
 export const sendEmail = async (options) => {
   const t = await initTransporter();
@@ -42,7 +41,6 @@ export const sendEmail = async (options) => {
   };
   const info = await t.sendMail(mailOptions);
   
-  // Ethereal mail ile test ediyorsak tarayıcıda görmek için linki konsola basıyoruz.
   if (info.messageId && (!process.env.SMTP_USER || process.env.SMTP_USER === 'ethereal.user')) {
     console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
   }

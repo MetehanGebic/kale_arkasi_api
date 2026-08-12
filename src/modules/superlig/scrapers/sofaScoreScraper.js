@@ -16,8 +16,7 @@ const TARGET_TOURNAMENTS = {
   LIGA_PORTUGAL: 238
 };
 
-// Super Lig "Big 4" SofaScore Team slugs
-const SUPER_LIG_CLUBS = ['galatasaray', 'fenerbahce', 'besiktas', 'trabzonspor', 'basaksehir', 'sivasspor', 'konyaspor', 'adana-demirspor']; 
+const SUPER_LIG_CLUBS = ['galatasaray', 'fenerbahce', 'besiktas', 'trabzonspor', 'basaksehir-fk', 'alanyaspor', 'konyaspor', 'caykur-rizespor','kasimpasa','kocaelispor','yilport-samsunspor','goztepe','genclerbirligi','gaziantep-fk','eyupspor','corum-fk','erzurumspor-fk','amed-sportif-faaliyetler']; 
 
 async function fetchSofaScoreMatches() {
   let browser = null;
