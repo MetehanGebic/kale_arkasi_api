@@ -55,6 +55,7 @@ model User {
   updatedAt           DateTime   @updatedAt
 
   completedTasks      UserTask[]
+  matchComments       MatchComment[]
 
   // Prisma'ya veritabanındaki "users" tablosunu kullanmasını söyler
   @@map("users") 
@@ -167,3 +168,16 @@ model UserTask {
   @@unique([userId, taskId, dateKey])
   @@map("user_tasks")
 }
+model MatchComment {
+  id        String   @id @default(uuid())
+  matchId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([matchId])
+  @@map("match_comments")
+}
+

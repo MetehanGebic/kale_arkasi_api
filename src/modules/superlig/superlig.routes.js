@@ -10,9 +10,14 @@ router.get('/fixtures', superligController.getFixtures);
 router.get('/top-scorers', superligController.getTopScorers);
 router.get('/transfers', superligController.getTransfers);
 
+// Live Matches
+router.get('/live-matches', superligController.getLiveMatches);
+
+// Match Comments (Forum)
+router.get('/live-matches/:matchId/comments', superligController.getMatchComments);
+router.post('/live-matches/:matchId/comments', verifyToken, superligController.addMatchComment);
+
 // Admin-only route for sync
 router.post('/sync', verifyToken, requireAdmin, superligController.syncData);
 
 export default router;
-
-router.get('/live-matches', superligController.getLiveMatches);

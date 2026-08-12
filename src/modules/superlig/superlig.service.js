@@ -81,3 +81,27 @@ export const getLiveMatches = async () => {
   // We could cache this in redis in production, but for now we fetch it directly
   return await fetchSofaScoreMatches();
 };
+
+export const getMatchComments = async (matchId) => {
+  return await prisma.matchComment.findMany({
+    where: { matchId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: { select: { id: true, username: true, avatarUrl: true, favoriteClubId: true } }
+    }
+  });
+};
+
+export const addMatchComment = async (matchId, userId, content) => {
+  return await prisma.matchComment.create({
+    data: {
+      matchId,
+      userId,
+      content
+    },
+    include: {
+      user: { select: { id: true, username: true, avatarUrl: true, favoriteClubId: true } }
+    }
+  });
+};
+

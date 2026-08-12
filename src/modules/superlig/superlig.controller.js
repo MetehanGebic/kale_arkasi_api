@@ -55,3 +55,26 @@ export const getLiveMatches = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getMatchComments = async (req, res, next) => {
+  try {
+    const matchId = req.params.matchId;
+    const data = await superligService.getMatchComments(matchId);
+    res.status(200).json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addMatchComment = async (req, res, next) => {
+  try {
+    const matchId = req.params.matchId;
+    const userId = req.user.id;
+    const { content } = req.body;
+    const data = await superligService.addMatchComment(matchId, userId, content);
+    res.status(201).json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+};
+
