@@ -9,6 +9,7 @@ import identityRoutes from './modules/identity/identity.routes.js';
 import tasksRoutes from './routes/tasksRoutes.js';
 import superligRoutes from './modules/superlig/superlig.routes.js';
 import userRoutes from './routes/userRoutes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
 import { apiLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { initCronJobs } from './core/cron.js';
@@ -38,6 +39,7 @@ app.use('/api/economy', economyRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/superlig', superligRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Bütün route'lardan sonra Error Handler eklenmeli
 app.use(errorHandler);

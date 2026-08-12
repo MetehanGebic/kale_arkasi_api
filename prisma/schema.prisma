@@ -181,3 +181,11 @@ model MatchComment {
   @@map("match_comments")
 }
 
+
+model TrackedMatch {
+  id          String   @id @default(uuid())
+  sofaScoreId Int      @unique
+  addedBy     String
+  createdAt   DateTime @default(now())
+}
+

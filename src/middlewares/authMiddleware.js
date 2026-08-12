@@ -1,9 +1,9 @@
-import jwt from 'jsonwebtoken';
+﻿import jwt from 'jsonwebtoken';
 
 /**
- * Authorization header'ından gelen JWT'yi doğrular ve
- * çözülen payload'ı req.user'a set eder.
- * Beklenen header formatı: "Authorization: Bearer <token>"
+ * Authorization header'Ä±ndan gelen JWT'yi doÄŸrular ve
+ * Ã§Ã¶zÃ¼len payload'Ä± req.user'a set eder.
+ * Beklenen header formatÄ±: "Authorization: Bearer <token>"
  */
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -11,7 +11,7 @@ export const verifyToken = (req, res, next) => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: 'Yetkilendirme başlığı eksik veya hatalı formatta.',
+      message: 'Yetkilendirme baÅŸlÄ±ÄŸÄ± eksik veya hatalÄ± formatta.',
     });
   }
 
@@ -20,23 +20,23 @@ export const verifyToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Token bulunamadı.',
+      message: 'Token bulunamadÄ±.',
     });
   }
 
   if (!process.env.JWT_SECRET) {
-    // JWT_SECRET tanımlı değilse hardcoded fallback'e düşmek yerine
-    // sunucu hatası döndürüyoruz; güvenlik açığı yaratmaktansa açıkça hata veriyoruz.
-    console.error('[authMiddleware] JWT_SECRET .env dosyasında tanımlı değil!');
+    // JWT_SECRET tanÄ±mlÄ± deÄŸilse hardcoded fallback'e dÃ¼ÅŸmek yerine
+    // sunucu hatasÄ± dÃ¶ndÃ¼rÃ¼yoruz; gÃ¼venlik aÃ§Ä±ÄŸÄ± yaratmaktansa aÃ§Ä±kÃ§a hata veriyoruz.
+    console.error('[authMiddleware] JWT_SECRET .env dosyasÄ±nda tanÄ±mlÄ± deÄŸil!');
     return res.status(500).json({
       success: false,
-      message: 'Sunucu yapılandırma hatası.',
+      message: 'Sunucu yapÄ±landÄ±rma hatasÄ±.',
     });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // identity.service.js içindeki _generateToken ile aynı payload şekli:
+    // identity.service.js iÃ§indeki _generateToken ile aynÄ± payload ÅŸekli:
     // { id, username, clubId }
     req.user = decoded;
     next();
@@ -44,14 +44,25 @@ export const verifyToken = (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: 'Oturum süresi dolmuş, lütfen tekrar giriş yapın.',
+        message: 'Oturum sÃ¼resi dolmuÅŸ, lÃ¼tfen tekrar giriÅŸ yapÄ±n.',
       });
     }
     return res.status(401).json({
       success: false,
-      message: 'Geçersiz token.',
+      message: 'GeÃ§ersiz token.',
     });
   }
 };
 
-export default { verifyToken };
+
+export const isAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({
+      success: false,
+      message: 'Bu islem icin admin yetkisi gereklidir.',
+    });
+  }
+  next();
+};
+
+export default { verifyToken, isAdmin };

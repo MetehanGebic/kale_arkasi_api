@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { prisma } from '../../../core/db.js';
 
 // Target tournaments according to the business rules
 const TARGET_TOURNAMENTS = {
@@ -70,15 +71,36 @@ async function fetchSofaScoreMatches() {
         console.warn(`SofaScore Scheduled JSON for ${today} not found or parse error. Relying on live events.`);
     }
 
+    const trackedMatchesData = await prisma.trackedMatch.findMany();
+    const trackedMatchIds = trackedMatchesData.map(m => m.sofaScoreId);
+
     const allEventsMap = new Map();
     [...scheduledEvents, ...liveEvents].forEach(e => {
         allEventsMap.set(e.id, e);
     });
+
+    for (const tid of trackedMatchIds) {
+        if (!allEventsMap.has(tid)) {
+            try {
+                await page.goto(`https://api.sofascore.com/api/v1/event/${tid}`, { waitUntil: 'networkidle2' });
+                let eventText = await page.evaluate(() => document.body.innerText);
+                const data = JSON.parse(eventText);
+                if (data && data.event) {
+                    allEventsMap.set(tid, data.event);
+                }
+            } catch (e) {
+                console.warn(`Failed to fetch specific tracked event ${tid}`);
+            }
+        }
+    }
+
     let allEvents = Array.from(allEventsMap.values());
 
     const targetIds = Object.values(TARGET_TOURNAMENTS);
     const filteredEvents = allEvents.filter(e => {
-        return e.tournament && e.tournament.uniqueTournament && targetIds.includes(e.tournament.uniqueTournament.id);
+        const isTarget = e.tournament && e.tournament.uniqueTournament && targetIds.includes(e.tournament.uniqueTournament.id);
+        const isTracked = trackedMatchIds.includes(e.id);
+        return isTarget || isTracked;
     });
 
     const matches = filteredEvents.map(e => {
