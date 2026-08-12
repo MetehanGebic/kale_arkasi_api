@@ -42,6 +42,8 @@ model User {
   teaBalance          Int        @default(0) // Çay Bakiyesi
   lastDailyTeaClaimAt DateTime?  // Günlük bedava çayı son alma zamanı
   status              String     @default("ACTIVE")
+  role                String     @default("USER") // ADMIN, CREATOR, USER
+  avatarUrl           String?    // Yüklenen profil fotoğrafı
   
   favoriteClubId      String
   favoriteClub        Club       @relation(fields: [favoriteClubId], references: [id])

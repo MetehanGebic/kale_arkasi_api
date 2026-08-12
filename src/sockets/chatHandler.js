@@ -11,20 +11,24 @@ const capoStates = {};
 const polls = {};
 
 const STORE_PRICES = {
+  cay: 50,
   capo: 400,
-  red_card: 100, // as an example
+  red_card: 100,
   madde: 50,
-  mesale: 150,
+  mesale: 200,
+  cekirdek: 30,
   gozluk: 25,
   davul: 100,
   kufur: 30
 };
 
 const STORE_ASSETS = {
+  cay: 'assets/images/store/cay.png',
   capo: 'assets/images/store/capo.png',
-  red_card: 'assets/images/store/kirmizi_kart.png',
+  red_card: 'assets/images/store/kart.png',
   madde: 'assets/images/store/madde.png',
-  mesale: 'assets/images/store/mesale.png',
+  mesale: 'assets/images/store/mesale.gif',
+  cekirdek: 'assets/images/store/cekirdek.gif',
   gozluk: 'assets/images/store/gozluk.png',
   davul: 'assets/images/store/davul.png',
   kufur: 'assets/images/store/kufur.png'
@@ -187,6 +191,10 @@ export const registerChatHandlers = (io, socket) => {
         return; // Don't broadcast Capo message to everyone
       } else if (type === 'madde') {
          text = `${user.username} sahaya yabancı madde fırlattı!`;
+      } else if (type === 'cay') {
+         text = `${user.username} herkese çay ısmarladı!`;
+      } else if (type === 'cekirdek') {
+         text = `${user.username} çekirdek çitliyor!`;
       } else if (type === 'davul') {
          text = `${user.username} tribünde davul çalıyor!`;
       } else if (type === 'gozluk') {

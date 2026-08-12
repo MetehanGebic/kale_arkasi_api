@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import * as superligController from './superlig.controller.js';
+import { verifyToken } from '../../middlewares/authMiddleware.js';
+import { requireAdmin } from '../../middlewares/requireAdmin.js';
 
 const router = Router();
 
@@ -8,7 +10,7 @@ router.get('/fixtures', superligController.getFixtures);
 router.get('/top-scorers', superligController.getTopScorers);
 router.get('/transfers', superligController.getTransfers);
 
-// Bu endpoint admin/güvenli olmalı ama şimdilik geliştirmedeyiz
-router.post('/sync', superligController.syncData);
+// Admin-only route for sync
+router.post('/sync', verifyToken, requireAdmin, superligController.syncData);
 
 export default router;
