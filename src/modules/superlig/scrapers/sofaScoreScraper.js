@@ -132,12 +132,15 @@ async function fetchSofaScoreMatches() {
         }
 
         let minute = null;
-        if (e.time) {
-            if (typeof e.time.initial === 'number') {
-                minute = e.time.initial;
-            } else if (e.time.currentPeriodStartTimestamp) {
+        if (e.status && e.status.type === 'finished') {
+            minute = 90;
+        } else if (e.time) {
+            if (e.time.currentPeriodStartTimestamp) {
                 minute = Math.floor((Date.now() / 1000 - e.time.currentPeriodStartTimestamp) / 60);
                 if (e.status && e.status.description === '2nd half') minute += 45;
+                if (e.status && e.status.description === 'Halftime') minute = 45;
+            } else if (typeof e.time.played === 'number') {
+                minute = e.time.played;
             }
         }
 
