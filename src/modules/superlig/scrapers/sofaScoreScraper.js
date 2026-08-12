@@ -131,6 +131,16 @@ async function fetchSofaScoreMatches() {
             if (e.status.type === 'finished') status = 'finished';
         }
 
+        let minute = null;
+        if (e.time) {
+            if (typeof e.time.initial === 'number') {
+                minute = e.time.initial;
+            } else if (e.time.currentPeriodStartTimestamp) {
+                minute = Math.floor((Date.now() / 1000 - e.time.currentPeriodStartTimestamp) / 60);
+                if (e.status && e.status.description === '2nd half') minute += 45;
+            }
+        }
+
         return {
             id: e.id.toString(),
             tournamentId,
@@ -142,7 +152,7 @@ async function fetchSofaScoreMatches() {
             awayLogo: `https://api.sofascore.app/api/v1/team/${awayId}/image`,
             homeScore: e.homeScore ? e.homeScore.current || 0 : 0,
             awayScore: e.awayScore ? e.awayScore.current || 0 : 0,
-            minute: e.time ? e.time.currentPeriodStartTimestamp : null,
+            minute: minute,
             isChatEnabled,
             startTimestamp: e.startTimestamp
         };
