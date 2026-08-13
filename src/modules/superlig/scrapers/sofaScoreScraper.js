@@ -32,12 +32,10 @@ const SUPER_LIG_CLUBS = ['galatasaray', 'fenerbahce', 'besiktas', 'trabzonspor',
 
 async function fetchSofaScoreMatches() {
   let browser = null;
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'puppeteer_sofascore_'));
 
   try {
     browser = await puppeteer.launch({
       headless: true,
-      userDataDir: tempDir,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -210,9 +208,6 @@ async function fetchSofaScoreMatches() {
     if (browser) {
       await browser.close().catch(console.error);
     }
-    try {
-        fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch(e) {}
   }
 }
 
@@ -223,14 +218,12 @@ export {
 };
 
 async function fetchSofaScoreMatchDetailsUncached(matchId) {
-  let browser = null;
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'puppeteer_sofascore_det_'));
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      userDataDir: tempDir,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-blink-features=AutomationControlled']
-    });
+    let browser = null;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-blink-features=AutomationControlled']
+      });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
@@ -273,11 +266,10 @@ async function fetchSofaScoreMatchDetailsUncached(matchId) {
   } catch (error) {
     console.error('Error fetching match details:', error);
     return null;
-  } finally {
-    if (browser) await browser.close().catch(console.error);
-    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+    } finally {
+      if (browser) await browser.close().catch(console.error);
+    }
   }
-}
 
 async function fetchSofaScoreMatchDetails(matchId) {
   const now = Date.now();
