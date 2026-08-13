@@ -136,7 +136,11 @@ async function fetchSofaScoreMatches() {
           TARGET_TOURNAMENTS.UEFA_SUPER_CUP
         ].includes(tournamentId);
 
-        const isChatEnabled = isSuperLig || (isEuropean && isTurkishTeam);
+        const nowUnix = Math.floor(Date.now() / 1000);
+        const startUnix = e.startTimestamp || nowUnix; // Default to now if undefined
+        const isTimeValid = (startUnix - nowUnix) <= 900; // 900 seconds = 15 minutes
+        
+        const isChatEnabled = (isSuperLig || (isEuropean && isTurkishTeam)) && isTimeValid;
 
         let status = 'notstarted';
         if (e.status) {

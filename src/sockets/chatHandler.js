@@ -47,8 +47,9 @@ export const registerChatHandlers = (io, socket) => {
       io.to(matchId).emit('chat_message', {
         id: Date.now().toString(),
         sender: 'Kahveci Rıza',
-        text: `Hoşgeldin ${user.username}! Çaylar şirketten değil , pamuk eller cebe!`,
+        text: `Hoşgeldin ${user.username}! Maç başlıyor, küfürsüz ve saygılı bir sohbet dileriz!`,
         isSystem: true,
+        team: 'system',
         timestamp: new Date().toISOString()
       });
     }, 1000);
@@ -121,7 +122,7 @@ export const registerChatHandlers = (io, socket) => {
   });
 
   socket.on('send_message', (data) => {
-    const { matchId, text, isCapo } = data;
+    const { matchId, text, isCapo, roomType } = data;
     if (!matchId || !text) return;
 
     // Check red card status
@@ -151,6 +152,7 @@ export const registerChatHandlers = (io, socket) => {
       text: text,
       isSystem: false,
       isCapo: isCapoMessage,
+      team: roomType || 'neutral',
       timestamp: new Date().toISOString()
     };
 
@@ -164,6 +166,7 @@ export const registerChatHandlers = (io, socket) => {
           sender: 'Kahveci Rıza',
           text: `Aleykümselam ${user.username}, geç otur boş masa var.`,
           isSystem: true,
+          team: roomType || 'neutral',
           timestamp: new Date().toISOString()
         });
       }, 1500);
@@ -171,7 +174,7 @@ export const registerChatHandlers = (io, socket) => {
   });
 
   socket.on('buy_addon', async (data) => {
-    const { matchId, type, target } = data;
+    const { matchId, type, target, roomType } = data;
     const price = STORE_PRICES[type];
     
     if (!price) {
@@ -232,6 +235,7 @@ export const registerChatHandlers = (io, socket) => {
         sender: 'Sistem',
         text: text,
         isSystem: true,
+        team: roomType || 'system',
         storeAsset: STORE_ASSETS[type],
         type: type,
         target: target,
@@ -268,7 +272,7 @@ export const registerChatHandlers = (io, socket) => {
       // Broadcast updated poll state
       io.to(matchId).emit('poll_updated', {
         pollId: pollId,
-        pollData: poll
+        options: poll.options
       });
     }
   });
