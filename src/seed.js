@@ -67,21 +67,21 @@ for (const club of clubs) {
   // incidentSyncWorker.js otomatik maç olayı (gol/kart/değişiklik) yorumlarını
   // bu sistem kullanıcısı adına oluşturuyor. Bu kullanıcı yoksa o özellik
   // sessizce hiçbir şey yapmadan çıkıyor, bu yüzden seed'de garanti altına alıyoruz.
-  const existingBot = await prisma.user.findFirst({ where: { email: 'bot@kalearkasi.com' } });
+  const existingBot = await prisma.user.findFirst({ where: { email: 'bot@skorla.com' } });
   if (!existingBot) {
     const anyClub = await prisma.club.findFirst();
     if (anyClub) {
       await prisma.user.create({
         data: {
-          username: 'kale_arkasi_bot',
-          email: 'bot@kalearkasi.com',
+          username: 'skorla_bot',
+          email: 'bot@skorla.com',
           password: '', // Bu hesapla normal login akışından giriş yapılamaz.
           role: 'USER',
           status: 'ACTIVE',
           favoriteClubId: anyClub.id,
         },
       });
-      console.log('✅ Sistem bot kullanıcısı oluşturuldu (bot@kalearkasi.com).');
+      console.log('✅ Sistem bot kullanıcısı oluşturuldu (bot@skorla.com).');
     } else {
       console.warn('⚠️ Bot kullanıcısı oluşturulamadı: veritabanında hiç kulüp yok.');
     }

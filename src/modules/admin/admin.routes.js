@@ -5,7 +5,6 @@ import authMiddleware from '../../middlewares/authMiddleware.js';
 
 const router = Router();
 
-// Tüm admin rotalarý auth ve isAdmin middleware'lerinden geçmeli
 router.use(authMiddleware.verifyToken);
 router.use(authMiddleware.isAdmin);
 

@@ -8,7 +8,7 @@ export const syncMatchIncidents = async (matchId) => {
     const details = await fetchSofaScoreMatchDetails(matchId);
     if (!details || !details.incidents) return;
     
-    const botUser = await prisma.user.findFirst({ where: { email: 'bot@kalearkasi.com' } });
+    const botUser = await prisma.user.findFirst({ where: { email: 'bot@skorla.com' } });
     if (!botUser) return;
 
     // Get existing incidents
