@@ -169,13 +169,15 @@ model UserTask {
   @@map("user_tasks")
 }
 model MatchComment {
-  id        String   @id @default(uuid())
-  matchId   String
-  userId    String
-  content   String
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  matchId    String
+  userId     String
+  content    String
+  incidentId String?  @unique
+  isSystem   Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   @@index([matchId])
   @@map("match_comments")
