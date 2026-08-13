@@ -73,6 +73,10 @@ async function fetchSofaScoreMatches() {
 
     const trackedMatchesData = await prisma.trackedMatch.findMany();
     const trackedMatchIds = trackedMatchesData.map(m => m.sofaScoreId);
+    const trackedMatchMap = new Map();
+    trackedMatchesData.forEach(m => {
+      trackedMatchMap.set(m.sofaScoreId, m);
+    });
 
     const allEventsMap = new Map();
     [...scheduledEvents, ...liveEvents].forEach(e => {
@@ -102,6 +106,15 @@ async function fetchSofaScoreMatches() {
         const isTracked = trackedMatchIds.includes(e.id);
         return isTarget || isTracked;
     });
+
+    // Get all clubs from our DB to match logos by slug
+    const dbClubs = await prisma.club.findMany({ select: { slug: true, logoUrl: true } });
+    const clubLogoMap = new Map();
+    for (const c of dbClubs) {
+      if (c.slug && c.logoUrl) {
+        clubLogoMap.set(c.slug, c.logoUrl);
+      }
+    }
 
     const matches = filteredEvents.map(e => {
         const tournamentId = e.tournament.uniqueTournament.id;
@@ -144,6 +157,20 @@ async function fetchSofaScoreMatches() {
             }
         }
 
+        let finalHomeLogo = clubLogoMap.get(homeSlug);
+        let finalAwayLogo = clubLogoMap.get(awaySlug);
+
+        // Check if there are custom logos for tracked matches
+        if (trackedMatchMap.has(e.id)) {
+          const tm = trackedMatchMap.get(e.id);
+          if (tm.homeLogoUrl) finalHomeLogo = tm.homeLogoUrl;
+          if (tm.awayLogoUrl) finalAwayLogo = tm.awayLogoUrl;
+        }
+
+        // Fallback to sofascore generic URL (which might 403)
+        finalHomeLogo = finalHomeLogo || `https://api.sofascore.app/api/v1/team/${homeId}/image`;
+        finalAwayLogo = finalAwayLogo || `https://api.sofascore.app/api/v1/team/${awayId}/image`;
+
         return {
             id: e.id.toString(),
             tournamentId,
@@ -151,8 +178,8 @@ async function fetchSofaScoreMatches() {
             status,
             homeTeam: homeName,
             awayTeam: awayName,
-            homeLogo: `https://api.sofascore.app/api/v1/team/${homeId}/image`,
-            awayLogo: `https://api.sofascore.app/api/v1/team/${awayId}/image`,
+            homeLogo: finalHomeLogo,
+            awayLogo: finalAwayLogo,
             homeScore: e.homeScore ? e.homeScore.current || 0 : 0,
             awayScore: e.awayScore ? e.awayScore.current || 0 : 0,
             minute: minute,

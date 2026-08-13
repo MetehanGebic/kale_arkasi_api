@@ -4,6 +4,9 @@ import { scrapeTransfers } from './scrapers/transfermarktScraper.js';
 import { scrapeSquads } from './scrapers/transfermarktSquadScraper.js';
 import { fetchSofaScoreMatches, fetchSofaScoreMatchDetails } from './scrapers/sofaScoreScraper.js';
 
+let liveMatchesCache = { data: [], timestamp: 0 };
+let liveMatchesPromise = null;
+
 export const getStandings = async () => {
   return await prisma.standingsEntry.findMany({
     orderBy: { rank: 'asc' },
@@ -78,8 +81,34 @@ export const runScrapers = async () => {
 
 
 export const getLiveMatches = async () => {
-  // We could cache this in redis in production, but for now we fetch it directly
-  return await fetchSofaScoreMatches();
+  const CACHE_TTL = 30000; // 30 seconds
+  const now = Date.now();
+
+  // If cache is fresh, return it immediately
+  if (liveMatchesCache.data.length > 0 && (now - liveMatchesCache.timestamp < CACHE_TTL)) {
+    return liveMatchesCache.data;
+  }
+
+  // If a fetch is already in progress, await the existing promise
+  if (liveMatchesPromise) {
+    try {
+      const result = await liveMatchesPromise;
+      if (result && result.length > 0) return result;
+    } catch(e) {}
+  }
+
+  // Otherwise, create a new promise and store it
+  liveMatchesPromise = fetchSofaScoreMatches().then(matches => {
+    liveMatchesCache.data = matches;
+    liveMatchesCache.timestamp = Date.now();
+    liveMatchesPromise = null;
+    return matches;
+  }).catch(err => {
+    liveMatchesPromise = null;
+    return liveMatchesCache.data; // fallback to stale data
+  });
+
+  return await liveMatchesPromise;
 };
 
 export const getMatchComments = async (matchId) => {

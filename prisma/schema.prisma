@@ -187,6 +187,8 @@ model MatchComment {
 model TrackedMatch {
   id          String   @id @default(uuid())
   sofaScoreId Int      @unique
+  homeLogoUrl String?
+  awayLogoUrl String?
   addedBy     String
   createdAt   DateTime @default(now())
 }

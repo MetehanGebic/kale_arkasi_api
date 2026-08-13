@@ -5,7 +5,7 @@ import AppError from '../../core/errors/AppError.js';
 class AdminController {
   async addTrackedMatch(req, res, next) {
     try {
-      const { url } = req.body;
+      const { url, homeLogoUrl, awayLogoUrl } = req.body;
       if (!url) throw new AppError('SofaScore linki gereklidir.', 400);
 
       // Regex to extract sofaScoreId from e.g. https://www.sofascore.com/galatasaray-young-boys/YIbsaJb#id:12634351
@@ -26,6 +26,8 @@ class AdminController {
       const tracked = await prisma.trackedMatch.create({
         data: {
           sofaScoreId,
+          homeLogoUrl,
+          awayLogoUrl,
           addedBy: req.user.id,
         },
       });
