@@ -30,6 +30,27 @@ const MATCH_DETAILS_CACHE_TTL = 20000; // 20 sn
 
 const SUPER_LIG_CLUBS = ['galatasaray', 'fenerbahce', 'besiktas', 'trabzonspor', 'basaksehir-fk', 'alanyaspor', 'konyaspor', 'caykur-rizespor','kasimpasa','kocaelispor','yilport-samsunspor','goztepe','genclerbirligi','gaziantep-fk','eyupspor','corum-fk','erzurumspor-fk','amed-sportif-faaliyetler']; 
 
+const SOFASCORE_TO_DB_SLUG = {
+  'galatasaray': 'galatasaray-istanbul',
+  'fenerbahce': 'fenerbahce-istanbul',
+  'besiktas': 'besiktas-istanbul',
+  'trabzonspor': 'trabzonspor',
+  'basaksehir-fk': 'istanbul-basaksehir-fk',
+  'alanyaspor': 'alanyaspor',
+  'konyaspor': 'konyaspor',
+  'caykur-rizespor': 'caykur-rizespor',
+  'kasimpasa': 'kasimpasa',
+  'kocaelispor': 'kocaelispor',
+  'samsunspor': 'samsunspor',
+  'goztepe': 'goztepe',
+  'genclerbirligi': 'genclerbirligi-ankara',
+  'gaziantep-fk': 'gaziantep-fk',
+  'eyupspor': 'eyupspor',
+  'corum-fk': 'corum-fk',
+  'erzurumspor-fk': 'buyuksehir-belediye-erzurumspor',
+  'amed-sportif-faaliyetler': 'amed-sk'
+};
+
 async function fetchSofaScoreMatches() {
   let browser = null;
 
@@ -116,11 +137,13 @@ async function fetchSofaScoreMatches() {
     });
 
     // Get all clubs from our DB to match logos by slug
-    const dbClubs = await prisma.club.findMany({ select: { slug: true, logoUrl: true } });
+    const dbClubs = await prisma.club.findMany({ select: { slug: true, logoUrl: true, primaryColor: true } });
     const clubLogoMap = new Map();
+    const clubColorMap = new Map();
     for (const c of dbClubs) {
-      if (c.slug && c.logoUrl) {
-        clubLogoMap.set(c.slug, c.logoUrl);
+      if (c.slug) {
+        if (c.logoUrl) clubLogoMap.set(c.slug, c.logoUrl);
+        if (c.primaryColor) clubColorMap.set(c.slug, c.primaryColor);
       }
     }
 
@@ -169,8 +192,13 @@ async function fetchSofaScoreMatches() {
             }
         }
 
-        let finalHomeLogo = clubLogoMap.get(homeSlug);
-        let finalAwayLogo = clubLogoMap.get(awaySlug);
+        const dbHomeSlug = SOFASCORE_TO_DB_SLUG[homeSlug] || homeSlug;
+        const dbAwaySlug = SOFASCORE_TO_DB_SLUG[awaySlug] || awaySlug;
+
+        let finalHomeLogo = clubLogoMap.get(dbHomeSlug);
+        let finalAwayLogo = clubLogoMap.get(dbAwaySlug);
+        const homePrimaryColor = clubColorMap.get(dbHomeSlug);
+        const awayPrimaryColor = clubColorMap.get(dbAwaySlug);
 
         // Check if there are custom logos for tracked matches
         if (trackedMatchMap.has(e.id)) {
@@ -192,6 +220,8 @@ async function fetchSofaScoreMatches() {
             awayTeam: awayName,
             homeLogo: finalHomeLogo,
             awayLogo: finalAwayLogo,
+            homeclubPrimaryColorHex: homePrimaryColor,
+            awayclubPrimaryColorHex: awayPrimaryColor,
             homeScore: e.homeScore ? e.homeScore.current || 0 : 0,
             awayScore: e.awayScore ? e.awayScore.current || 0 : 0,
             minute: minute,
