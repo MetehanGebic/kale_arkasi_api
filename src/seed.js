@@ -64,6 +64,31 @@ for (const club of clubs) {
     }
   }
 
+  // incidentSyncWorker.js otomatik maç olayı (gol/kart/değişiklik) yorumlarını
+  // bu sistem kullanıcısı adına oluşturuyor. Bu kullanıcı yoksa o özellik
+  // sessizce hiçbir şey yapmadan çıkıyor, bu yüzden seed'de garanti altına alıyoruz.
+  const existingBot = await prisma.user.findFirst({ where: { email: 'bot@kalearkasi.com' } });
+  if (!existingBot) {
+    const anyClub = await prisma.club.findFirst();
+    if (anyClub) {
+      await prisma.user.create({
+        data: {
+          username: 'kale_arkasi_bot',
+          email: 'bot@kalearkasi.com',
+          password: '', // Bu hesapla normal login akışından giriş yapılamaz.
+          role: 'USER',
+          status: 'ACTIVE',
+          favoriteClubId: anyClub.id,
+        },
+      });
+      console.log('✅ Sistem bot kullanıcısı oluşturuldu (bot@kalearkasi.com).');
+    } else {
+      console.warn('⚠️ Bot kullanıcısı oluşturulamadı: veritabanında hiç kulüp yok.');
+    }
+  } else {
+    console.log('⚡ Sistem bot kullanıcısı zaten mevcut.');
+  }
+
   console.log('✅ Tohumlama tamamlandı! Kahvehane takımlara hazır.');
 }
 

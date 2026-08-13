@@ -22,19 +22,19 @@ export const syncMatchIncidents = async (matchId) => {
       if (!inc.id || existingIds.has(inc.id.toString())) continue;
 
       let content = null;
-      const timeStr = inc.time + (inc.addedTime ? '+' + inc.addedTime : '') + '’';
+      const timeStr = inc.time + (inc.addedTime ? '+' + inc.addedTime : '') + "'";
       
       if (inc.incidentType === 'goal') {
         const pName = inc.player ? inc.player.shortName || inc.player.name : 'Bilinmeyen Oyuncu';
-        content = '? GOL! ' + pName + ' (' + timeStr + ')';
+        content = '? âš½GOL! ' + pName + ' (' + timeStr + ')';
       } else if (inc.incidentType === 'card') {
         const pName = inc.player ? inc.player.shortName || inc.player.name : 'Bilinmeyen Oyuncu';
-        if (inc.incidentClass === 'yellow') content = '?? Sarý Kart: ' + pName + ' (' + timeStr + ')';
-        if (inc.incidentClass === 'red') content = '?? Kýrmýzý Kart: ' + pName + ' (' + timeStr + ')';
+        if (inc.incidentClass === 'yellow') content = '?? ðŸŸ¨SarÄ± Kart: ' + pName + ' (' + timeStr + ')';
+        if (inc.incidentClass === 'red') content = '?? ðŸŸ¥KÄ±rmÄ±zÄ± Kart: ' + pName + ' (' + timeStr + ')';
       } else if (inc.incidentType === 'substitution') {
         const pIn = inc.playerIn ? inc.playerIn.shortName || inc.playerIn.name : 'Giren';
-        const pOut = inc.playerOut ? inc.playerOut.shortName || inc.playerOut.name : 'Çýkan';
-        content = '?? Deðiþiklik (' + timeStr + '): ' + pIn + ' oyuna giriyor, ' + pOut + ' çýkýyor.';
+        const pOut = inc.playerOut ? inc.playerOut.shortName || inc.playerOut.name : 'Ã‡Ä±kan';
+        content = '?? DeÄŸiÅŸiklik (' + timeStr + '): ' + pIn + ' oyuna giriyor, ' + pOut + ' Ã§Ä±kÄ±yor.';
       }
 
       if (content) {
@@ -54,7 +54,7 @@ export const syncMatchIncidents = async (matchId) => {
           getIO().to(matchId).emit('chat_message', {
             id: comment.id,
             sender: 'Sistem',
-            role: 'BOT',
+            role: 'ADMIN',
             text: content,
             avatarUrl: null,
             userId: botUser.id,

@@ -8,12 +8,19 @@ class AdminController {
       const { url, homeLogoUrl, awayLogoUrl } = req.body;
       if (!url) throw new AppError('SofaScore linki gereklidir.', 400);
 
-      // Regex to extract sofaScoreId from e.g. https://www.sofascore.com/galatasaray-young-boys/YIbsaJb#id:12634351
-      const match = url.match(/#id:(\d+)/);
-      if (!match || !match[1]) {
-        throw new AppError('Gecersiz link formati. Linkin sonunda #id:XXXXXXX bulunmalidir.', 400);
+      // Extract sofaScoreId from e.g. #id:12634351 or #12634351 or /match/12634351
+      let sofaScoreId = null;
+      const hashMatch = url.match(/#(?:id:)?(\d+)/);
+      if (hashMatch && hashMatch[1]) {
+        sofaScoreId = parseInt(hashMatch[1]);
+      } else {
+        const pathMatch = url.match(/\/match\/(\d+)/);
+        if (pathMatch && pathMatch[1]) sofaScoreId = parseInt(pathMatch[1]);
       }
-      const sofaScoreId = parseInt(match[1]);
+
+      if (!sofaScoreId) {
+        throw new AppError('Geçersiz link formatı. Linkten SofaScore Maç ID\'si çıkarılamadı (Örn: #1234567).', 400);
+      }
 
       // Check if already tracked
       const existing = await prisma.trackedMatch.findUnique({

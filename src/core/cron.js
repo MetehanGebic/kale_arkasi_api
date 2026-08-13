@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from '../modules/superlig/scrapers/tffScraper.js';
 import { scrapeTransfers } from '../modules/superlig/scrapers/transfermarktScraper.js';
 import { scrapeSquads } from '../modules/superlig/scrapers/transfermarktSquadScraper.js';
-import { fetchSofaScoreMatches } from '../modules/superlig/scrapers/sofaScoreScraper.js';
+import { getLiveMatches } from '../modules/superlig/superlig.service.js';
 import { syncMatchIncidents } from '../modules/superlig/incidentSyncWorker.js';
 
 export function initCronJobs() {
@@ -27,8 +27,14 @@ export function initCronJobs() {
   // Check live matches every minute
   cron.schedule('* * * * *', async () => {
     try {
-      const matches = await fetchSofaScoreMatches();
-      const liveMatches = matches.filter(m => m.status && (m.status.type === 'inprogress' || m.status.type === 'halftime'));
+      // getLiveMatches() 30 sn'lik bir önbellek + eşzamanlı istek birleştirme
+      // içeriyor; aynı Puppeteer taramasını hem HTTP istekleri hem de bu
+      // cron her dakika ayrı ayrı tetiklemesin diye doğrudan scraper yerine
+      // bu paylaşımlı servisi kullanıyoruz.
+      const matches = await getLiveMatches();
+      // fetchSofaScoreMatches() 'status' alanını düz bir string olarak
+      // döndürüyor ('live' | 'finished' | 'notstarted'), obje değil.
+      const liveMatches = matches.filter(m => m.status === 'live');
       for (const m of liveMatches) {
         await syncMatchIncidents(m.id);
       }

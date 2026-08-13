@@ -18,6 +18,16 @@ const TARGET_TOURNAMENTS = {
   UEFA_SUPER_CUP: 465
 };
 
+// fetchSofaScoreMatchDetails() ağır bir işlem: her çağrıda sıfırdan bir
+// headless Chromium başlatıp 4 ayrı sayfa geziyor. Bu fonksiyon hem
+// cron.js'teki dakikalık canlı-maç döngüsünden (her canlı maç için ayrı
+// çağrı) hem de /live-matches/:id/details endpoint'inden çağrılıyor.
+// Kısa ömürlü bir önbellek olmadan, birden fazla canlı maç olduğunda
+// sunucu her dakika birden fazla tam tarayıcı örneği açıp kapatıyor.
+const matchDetailsCache = new Map(); // matchId -> { data, timestamp }
+const matchDetailsPromises = new Map(); // matchId -> in-flight promise
+const MATCH_DETAILS_CACHE_TTL = 20000; // 20 sn
+
 const SUPER_LIG_CLUBS = ['galatasaray', 'fenerbahce', 'besiktas', 'trabzonspor', 'basaksehir-fk', 'alanyaspor', 'konyaspor', 'caykur-rizespor','kasimpasa','kocaelispor','yilport-samsunspor','goztepe','genclerbirligi','gaziantep-fk','eyupspor','corum-fk','erzurumspor-fk','amed-sportif-faaliyetler']; 
 
 async function fetchSofaScoreMatches() {
@@ -212,7 +222,7 @@ export {
   fetchSofaScoreMatchDetails
 };
 
-async function fetchSofaScoreMatchDetails(matchId) {
+async function fetchSofaScoreMatchDetailsUncached(matchId) {
   let browser = null;
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'puppeteer_sofascore_det_'));
   try {
@@ -269,3 +279,36 @@ async function fetchSofaScoreMatchDetails(matchId) {
   }
 }
 
+async function fetchSofaScoreMatchDetails(matchId) {
+  const now = Date.now();
+  const cached = matchDetailsCache.get(matchId);
+
+  // Taze önbellek varsa hiç tarayıcı açmadan onu döndür.
+  if (cached && (now - cached.timestamp < MATCH_DETAILS_CACHE_TTL)) {
+    return cached.data;
+  }
+
+  // Aynı maç için zaten devam eden bir istek varsa (ör. cron ile aynı anda
+  // bir kullanıcı maç detayına baktıysa) ikinci bir tarayıcı açmak yerine
+  // devam eden isteği bekleyip sonucunu paylaşıyoruz.
+  if (matchDetailsPromises.has(matchId)) {
+    return matchDetailsPromises.get(matchId);
+  }
+
+  const promise = fetchSofaScoreMatchDetailsUncached(matchId)
+    .then((data) => {
+      if (data) {
+        matchDetailsCache.set(matchId, { data, timestamp: Date.now() });
+      }
+      matchDetailsPromises.delete(matchId);
+      return data;
+    })
+    .catch((err) => {
+      matchDetailsPromises.delete(matchId);
+      // Taze veri alınamadıysa, elimizdeki bayat veri hiç yoktan iyidir.
+      return cached ? cached.data : null;
+    });
+
+  matchDetailsPromises.set(matchId, promise);
+  return promise;
+}

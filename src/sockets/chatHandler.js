@@ -10,6 +10,21 @@ const capoStates = {};
 // In-memory store for Polls: { matchId: { pollId: { question, options: [{id, text, votes}], votedUsers: {username: optionId} } } }
 const polls = {};
 
+// Rate limit store: { username: timestampMs }
+const lastMessageTimes = {};
+
+// Basic profanity list
+const BAD_WORDS = ['küfür', 'amk', 'aq', 'sik', 'oç', 'piç', 'yarak', 'yavşak'];
+
+const filterProfanity = (text) => {
+  let filteredText = text;
+  BAD_WORDS.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    filteredText = filteredText.replace(regex, '***');
+  });
+  return filteredText;
+};
+
 const STORE_PRICES = {
   cay: 250,
   capo: 400,
@@ -125,6 +140,19 @@ export const registerChatHandlers = (io, socket) => {
     const { matchId, text, isCapo, roomType } = data;
     if (!matchId || !text) return;
 
+    if (text.length > 250) {
+      socket.emit('socket_error', { message: 'Mesaj çok uzun! Maksimum 250 karakter.' });
+      return;
+    }
+
+    const now = Date.now();
+    const lastMsg = lastMessageTimes[user.username] || 0;
+    if (now - lastMsg < 2000) {
+      socket.emit('socket_error', { message: 'Çok hızlı mesaj gönderiyorsunuz, lütfen biraz bekleyin.' });
+      return;
+    }
+    lastMessageTimes[user.username] = now;
+
     // Check red card status
     if (redCards[matchId] && redCards[matchId][user.username]) {
       const expiration = redCards[matchId][user.username];
@@ -149,7 +177,7 @@ export const registerChatHandlers = (io, socket) => {
     const messagePayload = {
       id: Date.now().toString(),
       sender: user.username,
-      text: text,
+      text: filterProfanity(text),
       isSystem: false,
       isCapo: isCapoMessage,
       team: roomType || 'neutral',

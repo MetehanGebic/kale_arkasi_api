@@ -19,7 +19,15 @@ export const errorHandler = (err, req, res, next) => {
       message: err.message,
     });
   }
-  // 3. Beklenmeyen Programcı Hataları / Sunucu Hataları
+  // 3. Prisma Kayıt Bulunamadı Hatası
+  if (err.code === 'P2025') {
+    return res.status(404).json({
+      success: false,
+      message: 'İşlem yapılmak istenen kayıt bulunamadı veya zaten silinmiş.',
+    });
+  }
+
+  // 4. Beklenmeyen Programcı Hataları / Sunucu Hataları
   console.error('[UNHANDLED ERROR] 💥', err);
   return res.status(500).json({
     success: false,

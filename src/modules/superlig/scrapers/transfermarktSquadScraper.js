@@ -150,7 +150,7 @@ export async function scrapeSquads() {
         const totalValueEl = $kader('a.data-header__market-value-wrapper');
         let totalMarketValue = null;
         if (totalValueEl.length > 0) {
-          totalMarketValue = totalValueEl.text().replace('Toplam deÄŸer', '').trim();
+          totalMarketValue = totalValueEl.text().replace('Toplam değer', '').trim();
         }
 
         const rows = $kader('table.items > tbody > tr');

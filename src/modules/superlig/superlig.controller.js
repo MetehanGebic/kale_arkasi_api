@@ -1,4 +1,13 @@
+import { z } from 'zod';
 import * as superligService from './superlig.service.js';
+
+const addMatchCommentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, 'Yorum boş olamaz.')
+    .max(500, 'Yorum en fazla 500 karakter olabilir.'),
+});
 
 export const getStandings = async (req, res, next) => {
   try {
@@ -70,7 +79,7 @@ export const addMatchComment = async (req, res, next) => {
   try {
     const matchId = req.params.matchId;
     const userId = req.user.id;
-    const { content } = req.body;
+    const { content } = addMatchCommentSchema.parse(req.body);
     const data = await superligService.addMatchComment(matchId, userId, content);
     res.status(201).json({ status: 'success', data });
   } catch (error) {
@@ -88,4 +97,3 @@ export const getMatchDetails = async (req, res, next) => {
     next(error);
   }
 };
-

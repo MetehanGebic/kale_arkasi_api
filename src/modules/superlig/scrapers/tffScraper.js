@@ -11,13 +11,13 @@ const headers = {
 };
 
 export async function scrapeStandings() {
-  console.log('[TFF Scraper] Puan durumu Ã§ekiliyor...');
+  console.log('[TFF Scraper] Puan durumu çekiliyor...');
   try {
     const response = await axios.get(`${TFF_BASE_URL}?pageID=198`, { headers });
     const $ = cheerio.load(response.data);
     const standings = [];
 
-    // TFF'nin garip id'lerinden ve satÄ±r sonu boÅŸluklarÄ±ndan kaÃ§Ä±nmak iÃ§in * kullanÄ±yoruz
+    // TFF'nin garip id'lerinden ve satır sonu boşluklarından kaçınmak için * kullanıyoruz
     const rows = $('span[id*="_lblOyun"]').closest('tr');
 
     rows.each((i, row) => {
@@ -46,7 +46,7 @@ export async function scrapeStandings() {
       }
     });
 
-    console.log(`[TFF Scraper] ${standings.length} takÄ±m bulundu, veritabanÄ±na iÅŸleniyor...`);
+    console.log(`[TFF Scraper] ${standings.length} takım bulundu, veritabanına işleniyor...`);
 
     const upsertPromises = standings.map(async (entry) => {
       const club = await prisma.club.findUnique({ where: { tffKulupId: entry.tffKulupId } });
@@ -66,12 +66,12 @@ export async function scrapeStandings() {
     });
     await Promise.all(upsertPromises);
   } catch (error) {
-    console.error('[TFF Scraper] Puan durumu hatasÄ±:', error.message);
+    console.error('[TFF Scraper] Puan durumu hatası:', error.message);
   }
 }
 
 export async function scrapeFixtures() {
-  console.log('[TFF Scraper] FikstÃ¼r Ã§ekiliyor...');
+  console.log('[TFF Scraper] Fikstür çekiliyor...');
   try {
     for (let week = 1; week <= 34; week++) {
       const url = `${TFF_BASE_URL}?pageID=198&hafta=${week}`;
@@ -100,8 +100,8 @@ export async function scrapeFixtures() {
           const matchIdMatch = scoreLink.match(/macId=(\d+)/i);
           if (matchIdMatch) tffMacId = parseInt(matchIdMatch[1], 10);
         }
-        // EÄŸer maÃ§ henÃ¼z oynanmadÄ±ysa skor linki olmayabilir veya macId 0 kalabilir
-        // TFF genelde her maÃ§Ä±n bir detay sayfasÄ±na link verir, oradan macId alabiliriz.
+        // Eğer maç henüz oynanmadıysa skor linki olmayabilir veya macId 0 kalabilir
+        // TFF genelde her maçın bir detay sayfasına link verir, oradan macId alabiliriz.
         if (tffMacId === 0) {
            const detayLink = $(row).find('.haftaninMaclariDetay a').attr('href');
            if (detayLink) {
@@ -110,7 +110,7 @@ export async function scrapeFixtures() {
            }
         }
         
-        if (tffMacId === 0) return; // Mac ID bulunamadÄ±ysa geÃ§
+        if (tffMacId === 0) return; // Mac ID bulunamadıysa geç
 
         const homeLink = $(row).find('.haftaninMaclariEv a').attr('href');
         const awayLink = $(row).find('.haftaninMaclariDeplasman a').attr('href');
@@ -162,14 +162,14 @@ export async function scrapeFixtures() {
       });
       await Promise.all(upsertPromises);
     }
-    console.log('[TFF Scraper] FikstÃ¼r tamamlandÄ±.');
+    console.log('[TFF Scraper] Fikstür tamamlandı.');
   } catch (error) {
-    console.error('[TFF Scraper] FikstÃ¼r hatasÄ±:', error.message);
+    console.error('[TFF Scraper] Fikstür hatası:', error.message);
   }
 }
 
 export async function scrapeTopScorers() {
-  console.log('[TFF Scraper] Gol KrallÄ±ÄŸÄ± Ã§ekiliyor...');
+  console.log('[TFF Scraper] Gol Krallığı çekiliyor...');
   try {
     const response = await axios.get(`${TFF_BASE_URL}?pageID=821`, { headers });
     const $ = cheerio.load(response.data);
@@ -203,8 +203,8 @@ export async function scrapeTopScorers() {
       });
     });
     await Promise.all(upsertPromises);
-    console.log('[TFF Scraper] Gol krallÄ±ÄŸÄ± tamamlandÄ±.');
+    console.log('[TFF Scraper] Gol krallığı tamamlandı.');
   } catch (error) {
-    console.error('[TFF Scraper] Gol KrallÄ±ÄŸÄ± hatasÄ±:', error.message);
+    console.error('[TFF Scraper] Gol Krallığı hatası:', error.message);
   }
 }
