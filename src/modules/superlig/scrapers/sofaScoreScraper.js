@@ -217,7 +217,18 @@ async function fetchSofaScoreMatchDetails(matchId) {
       incidents = JSON.parse(text);
     } catch (e) {}
 
-    return { lineups, statistics, incidents };
+    // 4. Event details (for live minute & status)
+    let event = null;
+    try {
+      await page.goto(`https://api.sofascore.com/api/v1/event/${matchId}`, { waitUntil: 'networkidle2' });
+      const text = await page.evaluate(() => document.body.innerText);
+      const parsed = JSON.parse(text);
+      if (parsed && parsed.event) {
+        event = parsed.event;
+      }
+    } catch (e) {}
+
+    return { lineups, statistics, incidents, event };
   } catch (error) {
     console.error('Error fetching match details:', error);
     return null;
