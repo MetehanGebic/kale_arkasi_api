@@ -90,7 +90,12 @@ export async function scrapeFixtures() {
           const [d, m, y] = dateStr.split('.');
           const [h, min] = timeStr.split(':');
           if (y && m && d && h && min) {
-            matchDate = new Date(`${y}-${m}-${d}T${h}:${min}:00+03:00`);
+            // ISO 8601'de ay/gün/saat/dakika 2 haneli olmak ZORUNDA;
+            // TFF bazen "5.3.2026" veya "9:00" gibi tek haneli değerler
+            // döndürebilir. Doldurmadan `new Date('2026-3-5T9:00:...')`
+            // "Invalid Date" üretir ve o maçın tarihi sessizce bozulur.
+            const pad = (v) => v.padStart(2, '0');
+            matchDate = new Date(`${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:00+03:00`);
           }
         }
 
@@ -131,6 +136,11 @@ export async function scrapeFixtures() {
            awayScore = parseInt(scoreSpans[1], 10);
            if (isNaN(homeScore)) homeScore = null;
            if (isNaN(awayScore)) awayScore = null;
+        }
+
+        if (isNaN(matchDate.getTime())) {
+          console.warn(`[TFF Scraper] Uyarı: macId=${tffMacId} için tarih ayrıştırılamadı (dateStr="${dateStr}", timeStr="${timeStr}"), bu satır atlanıyor.`);
+          return;
         }
 
         fixtures.push({ tffMacId, week, matchDate, homeTffId, awayTffId, homeScore, awayScore });

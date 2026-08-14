@@ -36,6 +36,10 @@ class IdentityService {
     const user = await identityRepository.findUserByEmail(email);
     if (!user) throw new AppError('E-posta veya şifre hatalı.', 401);
 
+    if (user.status !== 'ACTIVE') {
+      throw new AppError('Hesabınız yönetici tarafından askıya alınmıştır.', 403);
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) throw new AppError('E-posta veya şifre hatalı.', 401);

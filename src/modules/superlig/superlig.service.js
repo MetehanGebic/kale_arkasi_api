@@ -3,8 +3,8 @@ import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from './scrapers/tf
 import { scrapeTransfers } from './scrapers/transfermarktScraper.js';
 import { scrapeSquads } from './scrapers/transfermarktSquadScraper.js';
 import { fetchSofaScoreMatches, fetchSofaScoreMatchDetails } from './scrapers/sofaScoreScraper.js';
+import { redis } from '../../core/redis.js';
 
-let liveMatchesCache = { data: [], timestamp: 0 };
 let liveMatchesPromise = null;
 
 export const getStandings = async () => {
@@ -81,13 +81,17 @@ export const runScrapers = async () => {
 
 
 export const getLiveMatches = async () => {
-  const CACHE_TTL = 30000; // 30 seconds
-  const now = Date.now();
-
-  // If cache is fresh, return it immediately
-  if (liveMatchesCache.data.length > 0 && (now - liveMatchesCache.timestamp < CACHE_TTL)) {
-    return liveMatchesCache.data;
+  try {
+    const cached = await redis.get('live_matches');
+    if (cached) {
+      console.log('[Redis] Cache HIT for live_matches');
+      return typeof cached === 'string' ? JSON.parse(cached) : cached;
+    }
+  } catch (err) {
+    console.error('[Redis] Error reading cache:', err);
   }
+
+  console.log('[Redis] Cache MISS for live_matches. Fetching...');
 
   // If a fetch is already in progress, await the existing promise
   if (liveMatchesPromise) {
@@ -98,14 +102,17 @@ export const getLiveMatches = async () => {
   }
 
   // Otherwise, create a new promise and store it
-  liveMatchesPromise = fetchSofaScoreMatches().then(matches => {
-    liveMatchesCache.data = matches;
-    liveMatchesCache.timestamp = Date.now();
+  liveMatchesPromise = fetchSofaScoreMatches().then(async (matches) => {
+    try {
+      await redis.set('live_matches', JSON.stringify(matches), { ex: 30 });
+    } catch (err) {
+      console.error('[Redis] Error setting cache:', err);
+    }
     liveMatchesPromise = null;
     return matches;
   }).catch(err => {
     liveMatchesPromise = null;
-    return liveMatchesCache.data; // fallback to stale data
+    return []; // fallback to empty if fetch fails and no cache
   });
 
   return await liveMatchesPromise;

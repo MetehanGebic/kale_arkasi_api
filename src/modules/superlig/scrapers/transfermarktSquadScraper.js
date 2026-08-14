@@ -234,12 +234,24 @@ export async function scrapeSquads() {
       }
 
       const scrapedPlayerIds = playersToInsert.map(p => p.tmPlayerId);
-      await prisma.player.deleteMany({
-        where: {
-          clubId: club.id,
-          tmPlayerId: { notIn: scrapedPlayerIds }
-        }
-      });
+
+      // ÖNEMLİ: playersToInsert boşsa (sayfa yapısı değişti, geçici hata,
+      // vs.) scrapedPlayerIds de boş olur. Prisma'da `notIn: []` HİÇBİR
+      // ŞEYİ hariç tutmaz, yani "tüm kayıtları eşleştir" anlamına gelir —
+      // bu durumda deleteMany kulübün VERİTABANINDAKİ TÜM kadrosunu silerdi,
+      // scrape'in kendisi başarısız olsa bile. Bu yüzden sadece gerçekten
+      // en az bir oyuncu bulunduysa eski kayıtları temizliyoruz; aksi halde
+      // mevcut (bir önceki başarılı scrape'ten kalma) kadroyu koruyoruz.
+      if (playersToInsert.length > 0) {
+        await prisma.player.deleteMany({
+          where: {
+            clubId: club.id,
+            tmPlayerId: { notIn: scrapedPlayerIds }
+          }
+        });
+      } else {
+        console.warn(`[TM Squad Scraper] Uyarı: ${club.name} için hiç oyuncu bulunamadı. Silme işlemi atlandı, mevcut kadro korunuyor.`);
+      }
 
       await prisma.club.update({
         where: { id: club.id },

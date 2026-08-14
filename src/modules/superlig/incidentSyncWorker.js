@@ -1,4 +1,3 @@
-
 import { prisma } from '../../core/db.js';
 import { fetchSofaScoreMatchDetails } from './scrapers/sofaScoreScraper.js';
 import { getIO } from '../../core/socket.js';
@@ -26,15 +25,15 @@ export const syncMatchIncidents = async (matchId) => {
       
       if (inc.incidentType === 'goal') {
         const pName = inc.player ? inc.player.shortName || inc.player.name : 'Bilinmeyen Oyuncu';
-        content = '? ⚽GOL! ' + pName + ' (' + timeStr + ')';
+        content = '⚽ GOL! ' + pName + ' (' + timeStr + ')';
       } else if (inc.incidentType === 'card') {
         const pName = inc.player ? inc.player.shortName || inc.player.name : 'Bilinmeyen Oyuncu';
-        if (inc.incidentClass === 'yellow') content = '?? 🟨Sarı Kart: ' + pName + ' (' + timeStr + ')';
-        if (inc.incidentClass === 'red') content = '?? 🟥Kırmızı Kart: ' + pName + ' (' + timeStr + ')';
+        if (inc.incidentClass === 'yellow') content = '🟨 Sarı Kart: ' + pName + ' (' + timeStr + ')';
+        if (inc.incidentClass === 'red') content = '🟥 Kırmızı Kart: ' + pName + ' (' + timeStr + ')';
       } else if (inc.incidentType === 'substitution') {
         const pIn = inc.playerIn ? inc.playerIn.shortName || inc.playerIn.name : 'Giren';
         const pOut = inc.playerOut ? inc.playerOut.shortName || inc.playerOut.name : 'Çıkan';
-        content = '?? Değişiklik (' + timeStr + '): ' + pIn + ' oyuna giriyor, ' + pOut + ' çıkıyor.';
+        content = '🔄 Değişiklik (' + timeStr + '): ' + pIn + ' oyuna giriyor, ' + pOut + ' çıkıyor.';
       }
 
       if (content) {
@@ -67,4 +66,3 @@ export const syncMatchIncidents = async (matchId) => {
     console.error('[IncidentSync] Error for match', matchId, error);
   }
 };
-

@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import * as superligController from './superlig.controller.js';
-import { verifyToken } from '../../middlewares/authMiddleware.js';
-import { requireAdmin } from '../../middlewares/requireAdmin.js';
+import { verifyToken, isAdmin } from '../../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -19,6 +18,6 @@ router.get('/live-matches/:matchId/comments', superligController.getMatchComment
 router.post('/live-matches/:matchId/comments', verifyToken, superligController.addMatchComment);
 
 // Admin-only route for sync
-router.post('/sync', verifyToken, requireAdmin, superligController.syncData);
+router.post('/sync', verifyToken, isAdmin, superligController.syncData);
 
 export default router;

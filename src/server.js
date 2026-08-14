@@ -13,6 +13,7 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import { apiLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { initCronJobs } from './core/cron.js';
+import { syncBannedUsersToRedis } from './core/redis.js';
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[Global] Unhandled Rejection at:', promise, 'reason:', reason);
@@ -52,11 +53,13 @@ app.use(errorHandler);
 const server = http.createServer(app);
 initSocket(server);
 
-// Başlangıçta cron servislerini de ayağa kaldırıyoruz
-initCronJobs();
-
-server.listen(PORT, () => {
-  console.log(`Kahvehane kapılarını açtı: http://localhost:${PORT}`);
+// Başlangıçta cron servislerini ve Redis verilerini ayağa kaldırıyoruz
+syncBannedUsersToRedis().then(() => {
+  initCronJobs();
+  
+  server.listen(PORT, () => {
+    console.log(`Kahvehane kapılarını açtı: http://localhost:${PORT}`);
+  });
 });
 
 import { prisma } from './core/db.js';

@@ -5,6 +5,7 @@ import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from '../superlig/s
 import { scrapeTransfers } from '../superlig/scrapers/transfermarktScraper.js';
 import { scrapeSquads } from '../superlig/scrapers/transfermarktSquadScraper.js';
 import { fetchSofaScoreMatches } from '../superlig/scrapers/sofaScoreScraper.js';
+import { redis } from '../../core/redis.js';
 
 class AdminController {
   async addTrackedMatch(req, res, next) {
@@ -43,7 +44,7 @@ class AdminController {
         },
       });
 
-      res.status(201).json({ status: 'success', data: tracked });
+      res.status(201).json({ success: true, data: tracked });
     } catch (error) {
       next(error);
     }
@@ -54,7 +55,7 @@ class AdminController {
       const matches = await prisma.trackedMatch.findMany({
         orderBy: { createdAt: 'desc' },
       });
-      res.status(200).json({ status: 'success', data: matches });
+      res.status(200).json({ success: true, data: matches });
     } catch (error) {
       next(error);
     }
@@ -66,7 +67,7 @@ class AdminController {
       await prisma.trackedMatch.delete({
         where: { id },
       });
-      res.status(200).json({ status: 'success', message: 'Mac takipten cikarildi.' });
+      res.status(200).json({ success: true, message: 'Mac takipten cikarildi.' });
     } catch (error) {
       next(error);
     }
@@ -86,31 +87,81 @@ class AdminController {
       switch (target) {
         case 'standings':
           await scrapeStandings();
-          res.status(200).json({ status: 'success', message: 'Puan durumu basariyla guncellendi.' });
+          res.status(200).json({ success: true, message: 'Puan durumu basariyla guncellendi.' });
           break;
         case 'fixtures':
           await scrapeFixtures();
-          res.status(200).json({ status: 'success', message: 'Fikstur basariyla guncellendi.' });
+          res.status(200).json({ success: true, message: 'Fikstur basariyla guncellendi.' });
           break;
         case 'topscorers':
           await scrapeTopScorers();
-          res.status(200).json({ status: 'success', message: 'Gol kralligi basariyla guncellendi.' });
+          res.status(200).json({ success: true, message: 'Gol kralligi basariyla guncellendi.' });
           break;
         case 'transfers':
           scrapeTransfers().catch(console.error); // Fire and forget because it's slow
-          res.status(200).json({ status: 'success', message: 'Transferler arka planda cekilmeye baslandi.' });
+          res.status(200).json({ success: true, message: 'Transferler arka planda cekilmeye baslandi.' });
           break;
         case 'squads':
           scrapeSquads().catch(console.error); // Fire and forget because it's slow
-          res.status(200).json({ status: 'success', message: 'Kadrolar arka planda cekilmeye baslandi.' });
+          res.status(200).json({ success: true, message: 'Kadrolar arka planda cekilmeye baslandi.' });
           break;
         case 'live-matches':
           await fetchSofaScoreMatches();
-          res.status(200).json({ status: 'success', message: 'Gunun maclari basariyla guncellendi.' });
+          res.status(200).json({ success: true, message: 'Gunun maclari basariyla guncellendi.' });
           break;
         default:
           throw new AppError('Bilinmeyen scraper hedefi.', 400);
       }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUsers(req, res, next) {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          status: true,
+          teaBalance: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({ success: true, data: users });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async changeUserStatus(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body; // 'ACTIVE', 'BANNED', vs.
+
+      if (!['ACTIVE', 'BANNED'].includes(status)) {
+        throw new AppError('Geçersiz durum (status).', 400);
+      }
+
+      // Kendini banlamasini engelle
+      if (req.user.id === id) {
+        throw new AppError('Kendinizi banlayamazsınız.', 400);
+      }
+
+      const user = await prisma.user.update({
+        where: { id },
+        data: { status },
+      });
+
+      if (status === 'BANNED') {
+        await redis.sadd('banned_users', id);
+      } else {
+        await redis.srem('banned_users', id);
+      }
+
+      res.status(200).json({ success: true, data: user });
     } catch (error) {
       next(error);
     }

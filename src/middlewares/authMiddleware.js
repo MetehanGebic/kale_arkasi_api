@@ -1,17 +1,14 @@
-﻿import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../core/db.js';
+import { redis } from '../core/redis.js';
 
-/**
- * Authorization header'Ä±ndan gelen JWT'yi doÄŸrular ve
- * Ã§Ã¶zÃ¼len payload'Ä± req.user'a set eder.
- * Beklenen header formatÄ±: "Authorization: Bearer <token>"
- */
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: 'Yetkilendirme baÅŸlÄ±ÄŸÄ± eksik veya hatalÄ± formatta.',
+      message: 'Yetkilendirme başlığı eksik veya hatalı formatta.',
     });
   }
 
@@ -20,49 +17,64 @@ export const verifyToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Token bulunamadÄ±.',
+      message: 'Token bulunamadı.',
     });
   }
 
   if (!process.env.JWT_SECRET) {
-    // JWT_SECRET tanÄ±mlÄ± deÄŸilse hardcoded fallback'e dÃ¼ÅŸmek yerine
-    // sunucu hatasÄ± dÃ¶ndÃ¼rÃ¼yoruz; gÃ¼venlik aÃ§Ä±ÄŸÄ± yaratmaktansa aÃ§Ä±kÃ§a hata veriyoruz.
-    console.error('[authMiddleware] JWT_SECRET .env dosyasÄ±nda tanÄ±mlÄ± deÄŸil!');
+    console.error('[authMiddleware] JWT_SECRET .env dosyasında tanımlı değil!');
     return res.status(500).json({
       success: false,
-      message: 'Sunucu yapÄ±landÄ±rma hatasÄ±.',
+      message: 'Sunucu yapılandırma hatası.',
     });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // identity.service.js iÃ§indeki _generateToken ile aynÄ± payload ÅŸekli:
-    // { id, username, clubId }
     req.user = decoded;
+    
+    // REDIS BAN CHECK
+    if (req.user && req.user.id) {
+      const isBanned = await redis.sismember('banned_users', req.user.id);
+      if (isBanned === 1) {
+        return res.status(403).json({
+          success: false,
+          message: 'Hesabınız yönetici tarafından askıya alınmıştır.',
+        });
+      }
+    }
+    
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: 'Oturum sÃ¼resi dolmuÅŸ, lÃ¼tfen tekrar giriÅŸ yapÄ±n.',
+        message: 'Oturum süresi dolmuş, lütfen tekrar giriş yapın.',
       });
     }
     return res.status(401).json({
       success: false,
-      message: 'GeÃ§ersiz token.',
+      message: 'Geçersiz token.',
     });
   }
 };
 
+export const isAdmin = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Yetkisiz erişim.' });
+    }
 
-export const isAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    return res.status(403).json({
-      success: false,
-      message: 'Bu islem icin admin yetkisi gereklidir.',
-    });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Bu işlem için yetkiniz yok.' });
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Yetki kontrolü sırasında hata oluştu.' });
   }
-  next();
 };
 
 export default { verifyToken, isAdmin };

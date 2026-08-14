@@ -38,7 +38,7 @@ router.get('/me', verifyToken, async (req, res) => {
       where: { id: req.user.id },
       select: { id: true, username: true, email: true, teaBalance: true, role: true, avatarUrl: true, favoriteClub: true }
     });
-    res.status(200).json({ success: true, user });
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Kullanıcı bilgileri alınamadı.' });
   }
@@ -70,7 +70,7 @@ router.post('/avatar', verifyToken, (req, res, next) => {
       where: { id: req.user.id },
       data: { avatarUrl }
     });
-    res.status(200).json({ success: true, avatarUrl });
+    res.status(200).json({ success: true, data: avatarUrl });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Avatar güncellenirken hata oluştu.' });
   }
