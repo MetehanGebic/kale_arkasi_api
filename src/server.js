@@ -14,6 +14,11 @@ import { apiLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { initCronJobs } from './core/cron.js';
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Global] Unhandled Rejection at:', promise, 'reason:', reason);
+  // Prevent Node from crashing due to Puppeteer temp profile unlink EBUSY on Windows
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const corsOptions = {

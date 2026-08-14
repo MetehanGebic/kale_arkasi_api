@@ -51,19 +51,28 @@ const SOFASCORE_TO_DB_SLUG = {
   'amed-sportif-faaliyetler': 'amed-sk'
 };
 
-async function fetchSofaScoreMatches() {
-  let browser = null;
+let isFetchingMatches = false;
+let fetchMatchesPromise = null;
 
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-      ]
-    });
+async function fetchSofaScoreMatches() {
+  if (isFetchingMatches && fetchMatchesPromise) {
+    return fetchMatchesPromise;
+  }
+
+  isFetchingMatches = true;
+  fetchMatchesPromise = (async () => {
+    let browser = null;
+
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-blink-features=AutomationControlled',
+        ]
+      });
 
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
@@ -236,12 +245,16 @@ async function fetchSofaScoreMatches() {
     return matches;
   } catch (error) {
     console.error('Error fetching SofaScore matches:', error);
-    return [];
-  } finally {
-    if (browser) {
-      await browser.close().catch(console.error);
+      return [];
+    } finally {
+      if (browser) {
+        await browser.close().catch(console.error);
+      }
+      isFetchingMatches = false;
+      fetchMatchesPromise = null;
     }
-  }
+  })();
+  return fetchMatchesPromise;
 }
 
 export {
