@@ -1,6 +1,10 @@
 
 import { prisma } from '../../core/db.js';
 import AppError from '../../core/errors/AppError.js';
+import { scrapeStandings, scrapeFixtures, scrapeTopScorers } from '../superlig/scrapers/tffScraper.js';
+import { scrapeTransfers } from '../superlig/scrapers/transfermarktScraper.js';
+import { scrapeSquads } from '../superlig/scrapers/transfermarktSquadScraper.js';
+import { fetchSofaScoreMatches } from '../superlig/scrapers/sofaScoreScraper.js';
 
 class AdminController {
   async addTrackedMatch(req, res, next) {
@@ -63,6 +67,50 @@ class AdminController {
         where: { id },
       });
       res.status(200).json({ status: 'success', message: 'Mac takipten cikarildi.' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async triggerScraper(req, res, next) {
+    try {
+      const { target } = req.params; // standings, fixtures, topscorers, transfers, squads, live-matches
+      
+      // Run the scraper asynchronously without blocking the request
+      // We don't await because these take minutes to finish.
+      // We just trigger them. Wait, user might want to know if it finished. 
+      // Actually, if we await it, the HTTP request might timeout (e.g., transfers/squads take a long time). 
+      // But let's await the fast ones and fire-and-forget the slow ones, OR just await all and increase timeout. 
+      // Let's await to ensure they complete, user can just wait.
+      
+      switch (target) {
+        case 'standings':
+          await scrapeStandings();
+          res.status(200).json({ status: 'success', message: 'Puan durumu basariyla guncellendi.' });
+          break;
+        case 'fixtures':
+          await scrapeFixtures();
+          res.status(200).json({ status: 'success', message: 'Fikstur basariyla guncellendi.' });
+          break;
+        case 'topscorers':
+          await scrapeTopScorers();
+          res.status(200).json({ status: 'success', message: 'Gol kralligi basariyla guncellendi.' });
+          break;
+        case 'transfers':
+          scrapeTransfers().catch(console.error); // Fire and forget because it's slow
+          res.status(200).json({ status: 'success', message: 'Transferler arka planda cekilmeye baslandi.' });
+          break;
+        case 'squads':
+          scrapeSquads().catch(console.error); // Fire and forget because it's slow
+          res.status(200).json({ status: 'success', message: 'Kadrolar arka planda cekilmeye baslandi.' });
+          break;
+        case 'live-matches':
+          await fetchSofaScoreMatches();
+          res.status(200).json({ status: 'success', message: 'Gunun maclari basariyla guncellendi.' });
+          break;
+        default:
+          throw new AppError('Bilinmeyen scraper hedefi.', 400);
+      }
     } catch (error) {
       next(error);
     }

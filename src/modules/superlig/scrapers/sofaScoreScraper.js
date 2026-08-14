@@ -85,19 +85,22 @@ async function fetchSofaScoreMatches() {
         console.error('SofaScore Live JSON parse error:', e);
     }
 
-    // 2. Fetch today's scheduled events (fallback/addition)
+    // 2. Fetch today's scheduled events per tournament (SofaScore removed global endpoint)
     const today = new Date().toISOString().split('T')[0];
-    await page.goto(`https://api.sofascore.com/api/v1/sport/football/scheduled-events/${today}`, { waitUntil: 'domcontentloaded' });
-    let scheduledText = await page.evaluate(() => document.body.innerText);
     let scheduledEvents = [];
-    try {
-        const data = JSON.parse(scheduledText);
-        if (data && data.events) {
-            scheduledEvents = data.events;
-            console.log('Parsed scheduled events:', scheduledEvents.length);
+    
+    for (const [key, tournamentId] of Object.entries(TARGET_TOURNAMENTS)) {
+        try {
+            await page.goto(`https://api.sofascore.com/api/v1/unique-tournament/${tournamentId}/scheduled-events/${today}`, { waitUntil: 'domcontentloaded' });
+            let scheduledText = await page.evaluate(() => document.body.innerText);
+            const data = JSON.parse(scheduledText);
+            if (data && data.events) {
+                scheduledEvents.push(...data.events);
+                console.log(`Parsed scheduled events for ${key}:`, data.events.length);
+            }
+        } catch (e) {
+            console.warn(`SofaScore Scheduled JSON for ${key} on ${today} not found or parse error.`);
         }
-    } catch (e) {
-        console.warn(`SofaScore Scheduled JSON for ${today} not found or parse error. Relying on live events.`);
     }
 
     const trackedMatchesData = await prisma.trackedMatch.findMany();
